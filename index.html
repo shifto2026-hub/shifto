@@ -969,11 +969,8 @@ const ShiftPanel = ({date,shift,color,onSave,onClose,presets,allShifts,agencyId,
     closeBtn: isDarkP ? BG3        : "#ede6d8",
   };
   const [local,setLocal] = useState({...shift});
-  const [showOverwriteConfirm, setShowOverwriteConfirm] = useState(false);
   const d = new Date(date+"T00:00:00");
   const isWorking = local.working;
-  // Was there already a logged shift when the panel opened?
-  const hadExistingShift = !!(shift && shift.working);
 
   // Conflict detection — check other agencies same day
   const hasConflict = useMemo(()=>{
@@ -990,49 +987,13 @@ const ShiftPanel = ({date,shift,color,onSave,onClose,presets,allShifts,agencyId,
     });
   },[local,allShifts,date,agencyId]);
 
-  const doSave = () => { onSave({...local, _manual:true}); onClose(); };
-  const handleConfirm = () => {
-    // If editing an existing working shift, ask for confirmation first
-    if (hadExistingShift && local.working) {
-      setShowOverwriteConfirm(true);
-    } else {
-      doSave();
-    }
-  };
+  const handleConfirm = () => { onSave({...local, _manual:true}); onClose(); };
 
   const dayName2  = d.toLocaleDateString("en-GB",{weekday:"long"});
   const dayDate   = d.toLocaleDateString("en-GB",{day:"numeric",month:"long"});
   const accentColor = isWorking ? (color||BLUE) : TEXT3;
 
   return React.createElement(React.Fragment,null,
-    // ── Overwrite confirmation modal ───────────────────────────────────────
-    showOverwriteConfirm&&React.createElement("div",{
-      style:{position:"fixed",inset:0,zIndex:600,background:"rgba(0,0,0,0.6)",display:"flex",alignItems:"center",justifyContent:"center"},
-      onClick:e=>{e.stopPropagation();setShowOverwriteConfirm(false);}
-    },
-      React.createElement("div",{
-        onClick:e=>e.stopPropagation(),
-        style:{background:P.bg,borderRadius:18,padding:"22px 20px",maxWidth:300,width:"calc(100% - 40px)",
-          border:`1px solid ${P.border}`,boxShadow:"0 16px 48px rgba(0,0,0,0.6)"}
-      },
-        React.createElement("div",{style:{fontSize:16,fontWeight:800,color:P.text,fontFamily:"'DM Sans',sans-serif",marginBottom:6}},
-          "Update shift?"),
-        React.createElement("div",{style:{fontSize:13,color:P.text3,fontFamily:"'DM Sans',sans-serif",marginBottom:20,lineHeight:1.5}},
-          "This will overwrite the existing shift for "+dayName2+", "+dayDate+". Are you sure?"),
-        React.createElement("div",{style:{display:"flex",gap:10}},
-          React.createElement("button",{
-            onClick:()=>setShowOverwriteConfirm(false),
-            style:{flex:1,padding:"11px",borderRadius:10,border:`1px solid ${P.border}`,background:"transparent",
-              color:P.text3,fontFamily:"'DM Sans',sans-serif",fontSize:13,cursor:"pointer"}
-          },"Cancel"),
-          React.createElement("button",{
-            onClick:e=>{e.stopPropagation();doSave();},
-            style:{flex:1,padding:"11px",borderRadius:10,border:"none",
-              background:color||BLUE,color:"#fff",fontFamily:"'DM Sans',sans-serif",fontSize:13,fontWeight:700,cursor:"pointer"}
-          },"Yes, update")
-        )
-      )
-    ),
     React.createElement("div",{onClick:onClose,style:{position:"fixed",inset:0,background:"rgba(5,8,20,0.78)",zIndex:400,backdropFilter:"blur(6px)"}}),
     React.createElement("div",{style:{
       position:"fixed",top:"50%",left:"50%",transform:"translate(-50%,-50%)",
@@ -1169,7 +1130,7 @@ const ShiftPanel = ({date,shift,color,onSave,onClose,presets,allShifts,agencyId,
 };
 
 // ─── Shift Row ────────────────────────────────────────────────────────────────
-const ShiftRow = ({date,shift,partnerWorking,clashAgencies,onOpen,onClear,accentColor,isPartnerView,theme}) => {
+const ShiftRow = ({date,shift,partnerWorking,clashAgencies,onOpen,onClear,onCopyLast,accentColor,isPartnerView,theme}) => {
   const d = new Date(date+"T00:00:00");
   const today = localDate();
   const isToday = date===today;
@@ -1290,7 +1251,12 @@ const ShiftRow = ({date,shift,partnerWorking,clashAgencies,onOpen,onClear,accent
         ),
         // Right side
         React.createElement("div",{style:{display:"flex",alignItems:"center",gap:8,flexShrink:0}},
-          // (copy-last-week button removed)
+          // Copy last week's shift
+          onCopyLast&&!shift?._rota&&React.createElement("button",{
+            onClick:e=>{e.stopPropagation();onCopyLast();},
+            title:"Copy last week's shift",
+            style:{background:"transparent",border:"none",color:TEXT3,fontSize:15,cursor:"pointer",padding:"4px",lineHeight:1,borderRadius:6}
+          },"↺"),
           // Overlap badge — same person has a shift at another workplace on this day
           clashAgencies&&clashAgencies.length>0
             ? React.createElement("div",{
@@ -1364,6 +1330,11 @@ const WeeklyView = ({agencies,shifts,setShifts,weekStartDay,accentColor,presets,
     triggerAutoSync();
   };
 
+  // Last week's same-day shift for copy feature
+  const getLastWeekShift = (date,aid) => {
+    const lastWeek = addDays(date,-7);
+    return shifts[`${lastWeek}_${aid}`]||null;
+  };
 
   const weekStats = useMemo(()=>agencies.map(ag=>{
     let hours=0,pay=0;
@@ -1483,6 +1454,7 @@ const WeeklyView = ({agencies,shifts,setShifts,weekStartDay,accentColor,presets,
     // Day rows
     React.createElement("div",{style:{flex:1,overflowY:"auto",padding:"10px 14px 8px",WebkitOverflowScrolling:"touch",display:"flex",flexDirection:"column",gap:5}},
       agency&&weekDates.map(date=>{
+        const lastWeekShift = getLastWeekShift(date,agency.id);
         const clashAgencies = otherAgencyClashOn(date);
         return React.createElement(ShiftRow,{
           key:date,date,
@@ -1493,7 +1465,10 @@ const WeeklyView = ({agencies,shifts,setShifts,weekStartDay,accentColor,presets,
           isPartnerView:!!isPartnerView,
           theme,
           onOpen:()=>setPanelDate(date),
-          onClear:()=>clearShift(date,agency.id)
+          onClear:()=>clearShift(date,agency.id),
+          onCopyLast:lastWeekShift&&lastWeekShift.working?()=>{
+            setShift(date,agency.id,{...lastWeekShift,id:uuid(),agencyId:agency.id,_manual:true});
+          }:null
         });
       })
     ),

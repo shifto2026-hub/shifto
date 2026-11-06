@@ -4706,7 +4706,25 @@ const SettingsView = ({myAgencies,setMyAgencies,partnerAgencies,setPartnerAgenci
           fbSyncStatus==="synced"?"Synced" : fbSyncStatus==="syncing"?"Syncing…" : "Waiting for changes"
         )
       ),
-      React.createElement("div",{style:{fontSize:12,color:acText3,fontFamily:"'DM Sans',sans-serif",lineHeight:1.6}},"Any shift you add is automatically sent to the other phone in seconds. No sign-in needed — both phones share the same live database.")
+      React.createElement("div",{style:{fontSize:12,color:acText3,fontFamily:"'DM Sans',sans-serif",lineHeight:1.6,marginBottom:12}},"Any shift you add is automatically sent to the other phone in seconds. No sign-in needed — both phones share the same live database."),
+      React.createElement("button",{
+        onClick:()=>{
+          try {
+            const db = firebase.database();
+            db.ref("shifto/shared").once("value").then(snap=>{
+              const val = snap.val();
+              if (!val) { alert("Nothing found in Firebase."); return; }
+              save("spt_fb_ts", 0); // reset timestamp so restore is accepted
+              if (_fbOnRestoreFn) {
+                _fbOnRestoreFn(val);
+                save("spt_fb_ts", val._ts||Date.now());
+                alert("✓ Data restored from Firebase!");
+              }
+            }).catch(()=>alert("Could not reach Firebase. Check your connection."));
+          } catch(e) { alert("Firebase not available."); }
+        },
+        style:{width:"100%",padding:"11px",borderRadius:10,background:"#1a3a2a",border:"1px solid #2d5a3d",color:"#4ade80",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:13,cursor:"pointer"}
+      },"↓ Pull latest data from Firebase")
     ),
 
     React.createElement(SL,{th},"Google Drive Sync"),

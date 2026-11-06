@@ -4710,18 +4710,26 @@ const SettingsView = ({myAgencies,setMyAgencies,partnerAgencies,setPartnerAgenci
       React.createElement("button",{
         onClick:()=>{
           try {
+            // Reset local timestamp to force the next Firebase event to apply
+            save("spt_fb_ts", 0);
             const db = firebase.database();
-            db.ref("shifto/shared").once("value").then(snap=>{
+            const ref = db.ref("shifto/shared");
+            ref.once("value").then(snap=>{
               const val = snap.val();
-              if (!val) { alert("Nothing found in Firebase."); return; }
-              save("spt_fb_ts", 0); // reset timestamp so restore is accepted
+              if (!val) { alert("Nothing found in Firebase — data may not be saved there yet."); return; }
               if (_fbOnRestoreFn) {
                 _fbOnRestoreFn(val);
                 save("spt_fb_ts", val._ts||Date.now());
                 alert("✓ Data restored from Firebase!");
+              } else {
+                alert("Restore function not ready. Please reload the app and try again.");
               }
-            }).catch(()=>alert("Could not reach Firebase. Check your connection."));
-          } catch(e) { alert("Firebase not available."); }
+            }).catch((err)=>{
+              // Fallback: try triggering the existing listener by resetting timestamp
+              save("spt_fb_ts", 0);
+              alert("Could not force-pull (error: " + (err&&err.code?err.code:err&&err.message?err.message:"unknown") + ").\n\nTimestamp reset — close and reopen the app to trigger auto-restore.");
+            });
+          } catch(e) { alert("Firebase not available: " + e.message); }
         },
         style:{width:"100%",padding:"11px",borderRadius:10,background:"#1a3a2a",border:"1px solid #2d5a3d",color:"#4ade80",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:13,cursor:"pointer"}
       },"↓ Pull latest data from Firebase")

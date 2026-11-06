@@ -561,11 +561,7 @@ const AppHeader = ({appName,myAgencies,partnerAgencies,tab,onTabChange,tabs,tabI
           : fbStatus==="synced"
           ? React.createElement("div",{title:"Synced ✓",style:{width:8,height:8,borderRadius:"50%",background:"#d4a843"}})
           : null,
-        React.createElement("button",{
-          onClick:onThemeToggle,
-          title:isDark?"Switch to light mode":"Switch to dark mode",
-          style:{background:isDark?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.07)",border:"none",cursor:"pointer",fontSize:15,lineHeight:1,padding:"6px 9px",borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center"}
-        },isDark?"☀️":"🌙")
+        null
       )
     ),
     // Tab strip — bank-app style
@@ -1234,7 +1230,7 @@ const ShiftRow = ({date,shift,partnerWorking,clashAgencies,onOpen,onClear,accent
   if (isToday) borderColor = "#1a274488";
   else if (isWorking) borderColor = "#1a274430";
   else if (isHoliday) borderColor = "#c9a84360";
-  else borderColor = "transparent";
+  else borderColor = "#1a274418"; // subtle border on off days
 
   return React.createElement("div",{style:{position:"relative",overflow:"hidden",borderRadius:12,marginBottom:3,flexShrink:0,
     animation:justLogged?"shiftPop 0.65s ease,shiftGlow 0.65s ease":"none"
@@ -2304,9 +2300,9 @@ const PaymentTracker = ({myAgencies,myShifts,partnerAgencies,partnerShifts,myPay
           onClick:()=>togglePaid(r.key,r.paid),
           style:{padding:"5px 12px",borderRadius:20,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",
             fontSize:11,fontWeight:700,
-            background:isPaid?"#1a2d55":"#d4a84322",
-            color:GREEN_C,
-            border:`1px solid ${isPaid?GREEN_C+"55":GREEN_C+"44"}`}
+            background:isPaid?"#1a2744":"transparent",
+            color:isPaid?"#ffffff":"#1a2744",
+            border:`1px solid ${isPaid?"#1a2744":"#1a274455"}`}
         }, isPaid ? "✓ Paid" : "Mark paid")
       ),
       // Stats
@@ -2319,9 +2315,9 @@ const PaymentTracker = ({myAgencies,myShifts,partnerAgencies,partnerShifts,myPay
           React.createElement("div",{style:{fontSize:9,color:txt3,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.05em",fontFamily:"'DM Sans',sans-serif",marginBottom:2}},"Gross"),
           React.createElement("div",{style:{fontSize:13,fontWeight:800,color:txt2,fontFamily:"'DM Mono',monospace"}},fmtGBP(r.gross))
         ),
-        r.net!=null&&React.createElement("div",{style:{flex:1,background:bg3,borderRadius:7,padding:"6px 8px",textAlign:"center"}},
+        r.net!=null&&React.createElement("div",{style:{flex:1,background:"#1a274408",borderRadius:7,padding:"6px 8px",textAlign:"center",border:"1px solid #1a274420"}},
           React.createElement("div",{style:{fontSize:9,color:txt3,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.05em",fontFamily:"'DM Sans',sans-serif",marginBottom:2}},"Est. Net"),
-          React.createElement("div",{style:{fontSize:13,fontWeight:800,color:GREEN_C,fontFamily:"'DM Mono',monospace"}},fmtGBP(r.net))
+          React.createElement("div",{style:{fontSize:13,fontWeight:800,color:"#1a2744",fontFamily:"'DM Mono',monospace"}},fmtGBP(r.net))
         )
       ),
       // Month adjustment badge
@@ -2340,9 +2336,9 @@ const PaymentTracker = ({myAgencies,myShifts,partnerAgencies,partnerShifts,myPay
         [["me",myName],["partner",partName]].map(([id,label])=>
           React.createElement("button",{key:id,onClick:()=>setPerson(id),
             style:{flex:1,padding:"8px",borderRadius:9,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontSize:13,fontWeight:700,
-              background:person===id?(T.isDark?"#d4a84322":"#e8f5ee"):bg3,
-              border:`1px solid ${person===id?GREEN_C:bdr}`,
-              color:person===id?GREEN_C:txt3,transition:"all 0.15s"}},label)
+              background:person===id?"#1a2744":bg3,
+              border:`1px solid ${person===id?"#1a2744":bdr}`,
+              color:person===id?"#ffffff":txt3,transition:"all 0.18s"}},label)
         ),
         React.createElement("button",{onClick:()=>setShowFilter(s=>!s),
           style:{padding:"8px 12px",borderRadius:9,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontSize:13,fontWeight:700,
@@ -3427,9 +3423,12 @@ const ReportsView = ({myAgencies,myShifts,setMyShifts,partnerAgencies,partnerShi
         React.createElement(C,{th:T},
           React.createElement("div",{style:{display:"flex",gap:8,marginBottom:10}},
             data.map(ag=>
-              React.createElement("div",{key:ag.id,style:{flex:1,borderRadius:10,padding:"12px",background:`${ag.color}12`,border:`1px solid ${ag.color}33`}},
-                React.createElement("div",{style:{fontSize:9,fontWeight:700,color:ag.color,textTransform:"uppercase",letterSpacing:"0.06em",fontFamily:"'DM Sans',sans-serif",marginBottom:4}},ag.name),
-                React.createElement("div",{style:{fontSize:18,fontWeight:800,color:ag.color,fontFamily:"'DM Mono',monospace"}},fmtGBP(ag.pay)),
+              React.createElement("div",{key:ag.id,style:{flex:1,borderRadius:10,padding:"12px",background:"#ffffff",border:`1px solid #1a274420`}},
+                React.createElement("div",{style:{display:"flex",alignItems:"center",gap:5,marginBottom:4}},
+                  React.createElement("div",{style:{width:7,height:7,borderRadius:"50%",background:ag.color,flexShrink:0}}),
+                  React.createElement("div",{style:{fontSize:9,fontWeight:700,color:"#7a7568",textTransform:"uppercase",letterSpacing:"0.06em",fontFamily:"'DM Sans',sans-serif"}},ag.name)
+                ),
+                React.createElement("div",{style:{fontSize:18,fontWeight:800,color:"#1a2744",fontFamily:"'DM Mono',monospace"}},fmtGBP(ag.pay)),
                 React.createElement("div",{style:{fontSize:11,color:RTXT3,fontFamily:"'DM Sans',sans-serif"}},fmtHours(ag.hours)),
                 React.createElement("div",{style:{fontSize:10,color:RTXT2,fontFamily:"'DM Sans',sans-serif",marginTop:2}},ag.days," day"+(ag.days!==1?"s":"")),
                 ag.sleepovers>0&&React.createElement("div",{style:{fontSize:10,color:PURPLE,marginTop:2,fontFamily:"'DM Sans',sans-serif"}},"💤 "+ag.sleepovers)
@@ -3442,7 +3441,7 @@ const ReportsView = ({myAgencies,myShifts,setMyShifts,partnerAgencies,partnerShi
               React.createElement("div",{style:{fontSize:11,color:RTXT3,fontFamily:"'DM Sans',sans-serif",marginTop:2}},totalDays," shifts")
             ),
             React.createElement("div",{style:{textAlign:"right"}},
-              React.createElement("div",{style:{fontSize:20,fontWeight:800,color:GREEN,fontFamily:"'DM Mono',monospace"}},fmtGBP(totalPay)),
+              React.createElement("div",{style:{fontSize:20,fontWeight:800,color:"#1a2744",fontFamily:"'DM Mono',monospace"}},fmtGBP(totalPay)),
               React.createElement("div",{style:{fontSize:11,color:RTXT3,fontFamily:"'DM Sans',sans-serif"}},fmtHours(totalHours))
             )
           )
@@ -3454,7 +3453,7 @@ const ReportsView = ({myAgencies,myShifts,setMyShifts,partnerAgencies,partnerShi
                 React.createElement("div",{style:{fontSize:13,color:RTXT2,fontFamily:"'DM Sans',sans-serif",fontWeight:700}},MONTHS[parseInt(m.slice(5,7))-1]+" "+m.slice(0,4)),
                 React.createElement("div",{style:{fontSize:11,color:RTXT3,fontFamily:"'DM Sans',sans-serif"}},days+" shifts · "+fmtHours(hours))
               ),
-              React.createElement("div",{style:{fontSize:16,fontWeight:800,color:GREEN,fontFamily:"'DM Mono',monospace"}},fmtGBP(pay))
+              React.createElement("div",{style:{fontSize:16,fontWeight:800,color:"#1a2744",fontFamily:"'DM Mono',monospace"}},fmtGBP(pay))
             )
           )
         ),
@@ -3940,17 +3939,20 @@ const NetPayView = ({who, agencies, shifts, payDetails, prefs, T, year, month, m
       const periodSL = result.studentLoanAmt;
       const takeHomeRate = gross > 0 ? (periodNet / gross * 100) : 0;
 
-      return React.createElement("div", { key: ag.id, style: { background: RBG, borderRadius: 14, padding: "14px", border: `1px solid ${ag.color}33`, marginBottom: 10 } },
+      return React.createElement("div", { key: ag.id, style: { background: RBG, borderRadius: 14, padding: "14px", border: `1px solid #1a274420`, marginBottom: 10 } },
         React.createElement("div", { style: { marginBottom: 10 } },
           React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center" } },
-            React.createElement("span", { style: { fontSize: 12, fontWeight: 800, color: ag.color, fontFamily: "'DM Sans',sans-serif" } }, ag.name),
+            React.createElement("div",{style:{display:"flex",alignItems:"center",gap:6}},
+              React.createElement("div",{style:{width:8,height:8,borderRadius:"50%",background:ag.color,flexShrink:0}}),
+              React.createElement("span", { style: { fontSize: 12, fontWeight: 800, color: "#1a2744", fontFamily: "'DM Sans',sans-serif" } }, ag.name)
+            ),
             React.createElement("span", { style: { fontSize: 10, color: RTXT3, fontWeight: 600, fontFamily: "'DM Sans',sans-serif" } }, freq + " · " + (pd.taxCode || "1257L"))
           ),
           periodLabel && React.createElement("div", { style: { fontSize: 10, color: RTXT3, fontFamily: "'DM Sans',sans-serif", marginTop: 2 } }, "📅 " + periodLabel)
         ),
         // Gross → Net waterfall
         [
-          ["Gross Pay", gross, ag.color, false],
+          ["Gross Pay", gross, "#1a2744", false],
           periodTax > 0 && ["Income Tax", -periodTax, RED, true],
           periodNI > 0 && ["National Insurance", -periodNI, ORANGE, true],
           periodPen > 0 && ["Pension (" + (pd.pension || 0) + "%)", -periodPen, PURPLE, true],
@@ -3963,12 +3965,12 @@ const NetPayView = ({who, agencies, shifts, payDetails, prefs, T, year, month, m
           )
         ),
         // Net take-home
-        React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8, padding: "8px 10px", background: `${ag.color}12`, borderRadius: 8 } },
+        React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8, padding: "8px 10px", background: "#1a274410", borderRadius: 8, border: "1px solid #1a274420" } },
           React.createElement("div", null,
             React.createElement("div", { style: { fontSize: 12, fontWeight: 800, color: RTXT2, fontFamily: "'DM Sans',sans-serif" } }, "Est. Take-Home"),
             React.createElement("div", { style: { fontSize: 10, color: RTXT3, fontFamily: "'DM Sans',sans-serif" } }, Math.round(takeHomeRate) + "% of gross · " + (mode === "yearly" ? "annual" : periodLabel || MONTHS[month]))
           ),
-          React.createElement("div", { style: { fontSize: 20, fontWeight: 800, color: ag.color, fontFamily: "'DM Mono',monospace" } }, fmtGBP(periodNet))
+          React.createElement("div", { style: { fontSize: 20, fontWeight: 800, color: "#1a2744", fontFamily: "'DM Mono',monospace" } }, fmtGBP(periodNet))
         ),
         // Annual projection line
         React.createElement("div", { style: { marginTop: 6, fontSize: 10, color: RTXT3, fontFamily: "'DM Sans',sans-serif", textAlign: "right" } },

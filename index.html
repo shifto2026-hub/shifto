@@ -4710,26 +4710,25 @@ const SettingsView = ({myAgencies,setMyAgencies,partnerAgencies,setPartnerAgenci
       React.createElement("button",{
         onClick:()=>{
           try {
-            // Reset local timestamp to force the next Firebase event to apply
+            // Reset timestamp to 0 so the listener will accept remote data
             save("spt_fb_ts", 0);
+            // Detach existing listener and reattach — this forces a fresh read
             const db = firebase.database();
             const ref = db.ref("shifto/shared");
-            ref.once("value").then(snap=>{
+            // Turn off any existing listener first
+            ref.off("value");
+            // Reattach — Firebase immediately fires with current value
+            ref.on("value", snap => {
+              ref.off("value"); // one-shot: detach after first fire
               const val = snap.val();
-              if (!val) { alert("Nothing found in Firebase — data may not be saved there yet."); return; }
+              if (!val) { alert("Nothing found in Firebase."); return; }
               if (_fbOnRestoreFn) {
                 _fbOnRestoreFn(val);
                 save("spt_fb_ts", val._ts||Date.now());
                 alert("✓ Data restored from Firebase!");
-              } else {
-                alert("Restore function not ready. Please reload the app and try again.");
               }
-            }).catch((err)=>{
-              // Fallback: try triggering the existing listener by resetting timestamp
-              save("spt_fb_ts", 0);
-              alert("Could not force-pull (error: " + (err&&err.code?err.code:err&&err.message?err.message:"unknown") + ").\n\nTimestamp reset — close and reopen the app to trigger auto-restore.");
             });
-          } catch(e) { alert("Firebase not available: " + e.message); }
+          } catch(e) { alert("Error: " + e.message); }
         },
         style:{width:"100%",padding:"11px",borderRadius:10,background:"#1a3a2a",border:"1px solid #2d5a3d",color:"#4ade80",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:13,cursor:"pointer"}
       },"↓ Pull latest data from Firebase")

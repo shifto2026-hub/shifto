@@ -1130,7 +1130,7 @@ const ShiftPanel = ({date,shift,color,onSave,onClose,presets,allShifts,agencyId,
 };
 
 // ─── Shift Row ────────────────────────────────────────────────────────────────
-const ShiftRow = ({date,shift,partnerWorking,clashAgencies,onOpen,onClear,onCopyLast,accentColor,isPartnerView,theme}) => {
+const ShiftRow = ({date,shift,partnerWorking,clashAgencies,onOpen,onClear,accentColor,isPartnerView,theme}) => {
   const d = new Date(date+"T00:00:00");
   const today = localDate();
   const isToday = date===today;
@@ -1251,12 +1251,7 @@ const ShiftRow = ({date,shift,partnerWorking,clashAgencies,onOpen,onClear,onCopy
         ),
         // Right side
         React.createElement("div",{style:{display:"flex",alignItems:"center",gap:8,flexShrink:0}},
-          // Copy last week's shift
-          onCopyLast&&!shift?._rota&&React.createElement("button",{
-            onClick:e=>{e.stopPropagation();onCopyLast();},
-            title:"Copy last week's shift",
-            style:{background:"transparent",border:"none",color:TEXT3,fontSize:15,cursor:"pointer",padding:"4px",lineHeight:1,borderRadius:6}
-          },"↺"),
+          // (copy-last-week button removed)
           // Overlap badge — same person has a shift at another workplace on this day
           clashAgencies&&clashAgencies.length>0
             ? React.createElement("div",{
@@ -1330,11 +1325,6 @@ const WeeklyView = ({agencies,shifts,setShifts,weekStartDay,accentColor,presets,
     triggerAutoSync();
   };
 
-  // Last week's same-day shift for copy feature
-  const getLastWeekShift = (date,aid) => {
-    const lastWeek = addDays(date,-7);
-    return shifts[`${lastWeek}_${aid}`]||null;
-  };
 
   const weekStats = useMemo(()=>agencies.map(ag=>{
     let hours=0,pay=0;
@@ -1454,7 +1444,6 @@ const WeeklyView = ({agencies,shifts,setShifts,weekStartDay,accentColor,presets,
     // Day rows
     React.createElement("div",{style:{flex:1,overflowY:"auto",padding:"10px 14px 8px",WebkitOverflowScrolling:"touch",display:"flex",flexDirection:"column",gap:5}},
       agency&&weekDates.map(date=>{
-        const lastWeekShift = getLastWeekShift(date,agency.id);
         const clashAgencies = otherAgencyClashOn(date);
         return React.createElement(ShiftRow,{
           key:date,date,
@@ -1465,10 +1454,7 @@ const WeeklyView = ({agencies,shifts,setShifts,weekStartDay,accentColor,presets,
           isPartnerView:!!isPartnerView,
           theme,
           onOpen:()=>setPanelDate(date),
-          onClear:()=>clearShift(date,agency.id),
-          onCopyLast:lastWeekShift&&lastWeekShift.working?()=>{
-            setShift(date,agency.id,{...lastWeekShift,id:uuid(),agencyId:agency.id,_manual:true});
-          }:null
+          onClear:()=>clearShift(date,agency.id)
         });
       })
     ),

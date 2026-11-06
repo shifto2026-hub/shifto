@@ -1284,7 +1284,7 @@ const ShiftRow = ({date,shift,partnerWorking,clashAgencies,onOpen,onClear,onCopy
           isWorking&&hrs>0
             ? React.createElement("span",{style:{fontSize:13,fontWeight:700,color:accent,fontFamily:"'DM Mono',monospace",minWidth:32,textAlign:"right"}},fmtHours(hrs))
             : isNotWorking
-            ? React.createElement("span",{style:{fontSize:13,minWidth:24,textAlign:"right"}},"🏖️")
+            ? React.createElement("span",{style:{fontSize:shift?.isHoliday?13:10,fontWeight:shift?.isHoliday?400:700,color:shift?.isHoliday?"inherit":`${accent}66`,fontFamily:"'DM Sans',sans-serif",letterSpacing:shift?.isHoliday?"0":"0.05em",textTransform:"uppercase",minWidth:24,textAlign:"right"}},shift?.isHoliday?"🏖️":"Off")
             : null
         )
       )

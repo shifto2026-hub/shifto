@@ -1251,12 +1251,6 @@ const ShiftRow = ({date,shift,partnerWorking,clashAgencies,onOpen,onClear,onCopy
         ),
         // Right side
         React.createElement("div",{style:{display:"flex",alignItems:"center",gap:8,flexShrink:0}},
-          // Copy last week's shift
-          onCopyLast&&!shift?._rota&&React.createElement("button",{
-            onClick:e=>{e.stopPropagation();onCopyLast();},
-            title:"Copy last week's shift",
-            style:{background:"transparent",border:"none",color:TEXT3,fontSize:15,cursor:"pointer",padding:"4px",lineHeight:1,borderRadius:6}
-          },"↺"),
           // Overlap badge — same person has a shift at another workplace on this day
           clashAgencies&&clashAgencies.length>0
             ? React.createElement("div",{

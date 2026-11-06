@@ -969,8 +969,11 @@ const ShiftPanel = ({date,shift,color,onSave,onClose,presets,allShifts,agencyId,
     closeBtn: isDarkP ? BG3        : "#ede6d8",
   };
   const [local,setLocal] = useState({...shift});
+  const [showOverwriteConfirm, setShowOverwriteConfirm] = useState(false);
   const d = new Date(date+"T00:00:00");
   const isWorking = local.working;
+  // Was there already a logged shift when the panel opened?
+  const hadExistingShift = !!(shift && shift.working);
 
   // Conflict detection — check other agencies same day
   const hasConflict = useMemo(()=>{
@@ -987,13 +990,49 @@ const ShiftPanel = ({date,shift,color,onSave,onClose,presets,allShifts,agencyId,
     });
   },[local,allShifts,date,agencyId]);
 
-  const handleConfirm = () => { onSave({...local, _manual:true}); onClose(); };
+  const doSave = () => { onSave({...local, _manual:true}); onClose(); };
+  const handleConfirm = () => {
+    // If editing an existing working shift, ask for confirmation first
+    if (hadExistingShift && local.working) {
+      setShowOverwriteConfirm(true);
+    } else {
+      doSave();
+    }
+  };
 
   const dayName2  = d.toLocaleDateString("en-GB",{weekday:"long"});
   const dayDate   = d.toLocaleDateString("en-GB",{day:"numeric",month:"long"});
   const accentColor = isWorking ? (color||BLUE) : TEXT3;
 
   return React.createElement(React.Fragment,null,
+    // ── Overwrite confirmation modal ───────────────────────────────────────
+    showOverwriteConfirm&&React.createElement("div",{
+      style:{position:"fixed",inset:0,zIndex:600,background:"rgba(0,0,0,0.6)",display:"flex",alignItems:"center",justifyContent:"center"},
+      onClick:()=>setShowOverwriteConfirm(false)
+    },
+      React.createElement("div",{
+        onClick:e=>e.stopPropagation(),
+        style:{background:P.bg,borderRadius:18,padding:"22px 20px",maxWidth:300,width:"calc(100% - 40px)",
+          border:`1px solid ${P.border}`,boxShadow:"0 16px 48px rgba(0,0,0,0.6)"}
+      },
+        React.createElement("div",{style:{fontSize:16,fontWeight:800,color:P.text,fontFamily:"'DM Sans',sans-serif",marginBottom:6}},
+          "Update shift?"),
+        React.createElement("div",{style:{fontSize:13,color:P.text3,fontFamily:"'DM Sans',sans-serif",marginBottom:20,lineHeight:1.5}},
+          "This will overwrite the existing shift for "+dayName2+", "+dayDate+". Are you sure?"),
+        React.createElement("div",{style:{display:"flex",gap:10}},
+          React.createElement("button",{
+            onClick:()=>setShowOverwriteConfirm(false),
+            style:{flex:1,padding:"11px",borderRadius:10,border:`1px solid ${P.border}`,background:"transparent",
+              color:P.text3,fontFamily:"'DM Sans',sans-serif",fontSize:13,cursor:"pointer"}
+          },"Cancel"),
+          React.createElement("button",{
+            onClick:doSave,
+            style:{flex:1,padding:"11px",borderRadius:10,border:"none",
+              background:color||BLUE,color:"#fff",fontFamily:"'DM Sans',sans-serif",fontSize:13,fontWeight:700,cursor:"pointer"}
+          },"Yes, update")
+        )
+      )
+    ),
     React.createElement("div",{onClick:onClose,style:{position:"fixed",inset:0,background:"rgba(5,8,20,0.78)",zIndex:400,backdropFilter:"blur(6px)"}}),
     React.createElement("div",{style:{
       position:"fixed",top:"50%",left:"50%",transform:"translate(-50%,-50%)",

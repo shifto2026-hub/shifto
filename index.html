@@ -1008,7 +1008,7 @@ const ShiftPanel = ({date,shift,color,onSave,onClose,presets,allShifts,agencyId,
     // ── Overwrite confirmation modal ───────────────────────────────────────
     showOverwriteConfirm&&React.createElement("div",{
       style:{position:"fixed",inset:0,zIndex:600,background:"rgba(0,0,0,0.6)",display:"flex",alignItems:"center",justifyContent:"center"},
-      onClick:()=>setShowOverwriteConfirm(false)
+      onClick:e=>{e.stopPropagation();setShowOverwriteConfirm(false);}
     },
       React.createElement("div",{
         onClick:e=>e.stopPropagation(),
@@ -1026,7 +1026,7 @@ const ShiftPanel = ({date,shift,color,onSave,onClose,presets,allShifts,agencyId,
               color:P.text3,fontFamily:"'DM Sans',sans-serif",fontSize:13,cursor:"pointer"}
           },"Cancel"),
           React.createElement("button",{
-            onClick:doSave,
+            onClick:e=>{e.stopPropagation();doSave();},
             style:{flex:1,padding:"11px",borderRadius:10,border:"none",
               background:color||BLUE,color:"#fff",fontFamily:"'DM Sans',sans-serif",fontSize:13,fontWeight:700,cursor:"pointer"}
           },"Yes, update")

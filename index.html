@@ -570,11 +570,10 @@ const AppHeader = ({appName,myAgencies,partnerAgencies,tab,onTabChange,tabs,them
     position:"fixed",top:0,left:0,right:0,zIndex:100,
     maxWidth:430,margin:"0 auto",
     paddingTop:"env(safe-area-inset-top,0px)",
-    background:hdrBg,
-    borderBottom:`1px solid ${hdrBorder}`
+    background:hdrBg
   }},
     // App name row
-    React.createElement("div",{style:{height:62,padding:"0 20px",display:"flex",alignItems:"center",justifyContent:"space-between"}},
+    React.createElement("div",{style:{height:58,padding:"0 20px",display:"flex",alignItems:"center",justifyContent:"space-between"}},
       React.createElement("div",{style:{fontSize:30,fontWeight:900,color:"#f5f0e8",fontFamily:"'DM Sans',sans-serif",letterSpacing:"-0.04em"}},appName),
       React.createElement("div",{style:{display:"flex",alignItems:"center",gap:10}},
         fbStatus==="syncing"
@@ -585,8 +584,8 @@ const AppHeader = ({appName,myAgencies,partnerAgencies,tab,onTabChange,tabs,them
         React.createElement(ShiftoLogo,{size:38})
       )
     ),
-    // Tab strip — always on navy
-    React.createElement("div",{style:{height:56,display:"flex",borderTop:`1px solid ${hdrBorder}`,padding:"0 4px"}},
+    // Tab strip — no border, navy bg creates natural separation
+    React.createElement("div",{style:{height:52,display:"flex",borderTop:"1px solid rgba(255,255,255,0.08)",padding:"0 4px"}},
       (tabs||[]).map(t=>{
         const isActive = tab===t.id;
         const icon = tabIcons[t.id];
@@ -791,7 +790,7 @@ const SummaryTile = ({weekStats,totalHours,totalPay,monthPay,monthHours,weekKey,
   return React.createElement("div",{style:{
     borderTop:`1px solid ${isSTDark?"#3a4f80":"rgba(26,39,68,0.1)"}`,
     background:STbg2,flexShrink:0,
-    paddingBottom:"env(safe-area-inset-bottom, 6px)"
+    paddingBottom:"calc(env(safe-area-inset-bottom, 0px) + 6px)"
   }},
 
     // ── Collapsed bar — always visible, tap to expand ──────────────────
@@ -1432,7 +1431,7 @@ const WeeklyView = ({agencies,shifts,setShifts,weekStartDay,accentColor,presets,
 
   return React.createElement("div",{style:{display:"flex",flexDirection:"column",flex:1,minHeight:0,overflow:"hidden",position:"relative"}},
     // Controls
-    React.createElement("div",{style:{flexShrink:0,padding:"10px 14px 10px",background:WBG,borderBottom:`1px solid ${isWDark?"#3a4f80":"rgba(26,39,68,0.08)"}`}},
+    React.createElement("div",{style:{flexShrink:0,padding:"10px 14px 10px",background:WBG,boxShadow:isWDark?"none":"0 1px 0 rgba(26,39,68,0.08)"}},
       React.createElement("div",{style:{display:"flex",alignItems:"center",gap:8,marginBottom:10}},
         React.createElement("button",{onClick:()=>setOffset(o=>o-1),style:{background:WBG2,border:`1px solid ${isWDark?WBDR:"rgba(26,39,68,0.12)"}`,borderRadius:10,color:WTXT3,padding:"5px 13px",cursor:"pointer",fontSize:17}},"‹"),
         React.createElement("div",{style:{flex:1,textAlign:"center"}},
@@ -4957,7 +4956,7 @@ function App() {
   };
 
   const PARTNER_PRESETS = [{label:"7–7",start:"07:00",end:"19:00"},{label:"7–1",start:"07:00",end:"13:00"}];
-  const headerHeight = "calc(env(safe-area-inset-top, 0px) + 108px)";
+  const headerHeight = "calc(env(safe-area-inset-top, 0px) + 110px)";
 
   const isDark = (prefs.theme||"dark")==="dark";
   const T = {
@@ -5002,10 +5001,10 @@ function App() {
   const onThemeToggle = () => setPrefs(p=>({...p,theme:(p.theme||"dark")==="dark"?"light":"dark"}));
 
   useEffect(()=>{
-    document.body.style.background = T.bg;
+    document.body.style.background = "#1a2744"; // always navy so iOS safe areas are navy
     document.body.style.color = T.text;
     const meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.content = T.bg;
+    if (meta) meta.content = "#1a2744";
   },[T.bg,T.text]);
 
   return React.createElement(React.Fragment,null,
@@ -5022,7 +5021,7 @@ function App() {
     `),
     React.createElement("div",{style:{maxWidth:430,margin:"0 auto",minHeight:"100dvh",background:T.bg}},
       React.createElement(AppHeader,{appName:prefs.appName||"Shifto",myAgencies,partnerAgencies,tab,onTabChange:setTab,tabs:TABS_LIST,theme:prefs.theme||"dark",onThemeToggle,T,fbStatus}),
-      React.createElement("div",{style:{position:"fixed",top:headerHeight,bottom:0,left:0,right:0,maxWidth:430,margin:"0 auto",display:"flex",flexDirection:"column",overflow:"hidden",background:T.bg,paddingTop:6}},
+      React.createElement("div",{style:{position:"fixed",top:headerHeight,bottom:0,left:0,right:0,maxWidth:430,margin:"0 auto",display:"flex",flexDirection:"column",overflow:"hidden",background:T.bg,paddingTop:0}},
         tab==="week"&&React.createElement(WeeklyView,{
           key:prefs.weekStartDay,
           agencies:myAgencies,shifts:myShifts,setShifts:setMyShifts,

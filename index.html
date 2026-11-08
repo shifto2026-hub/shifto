@@ -584,8 +584,8 @@ const AppHeader = ({appName,myAgencies,partnerAgencies,tab,onTabChange,tabs,them
         React.createElement(ShiftoLogo,{size:38})
       )
     ),
-    // Tab strip — no border, navy bg creates natural separation
-    React.createElement("div",{style:{height:52,display:"flex",borderTop:"1px solid rgba(255,255,255,0.08)",padding:"0 4px"}},
+    // Tab strip — gold bottom bar separates header from content
+    React.createElement("div",{style:{height:52,display:"flex",borderTop:"1px solid rgba(255,255,255,0.08)",borderBottom:"3px solid #c9a843",padding:"0 4px"}},
       (tabs||[]).map(t=>{
         const isActive = tab===t.id;
         const icon = tabIcons[t.id];
@@ -788,7 +788,7 @@ const SummaryTile = ({weekStats,totalHours,totalPay,monthPay,monthHours,weekKey,
   const goalPct = goalAmt > 0 ? Math.min(100, Math.round(finalMonth / goalAmt * 100)) : 0;
 
   return React.createElement("div",{style:{
-    borderTop:`1px solid ${isSTDark?"#3a4f80":"rgba(26,39,68,0.1)"}`,
+    borderTop:"3px solid #c9a843",
     background:STbg2,flexShrink:0,
     paddingBottom:"calc(env(safe-area-inset-bottom, 0px) + 6px)"
   }},
@@ -1208,7 +1208,7 @@ const ShiftRow = ({date,shift,partnerWorking,clashAgencies,onOpen,onClear,onCopy
   else if (isWorking) borderColor = cardBdr;
   else borderColor = isDark ? "#2d3f74" : "#e8e0cc";
 
-  return React.createElement("div",{style:{position:"relative",overflow:"hidden",borderRadius:12,marginBottom:3,flexShrink:0,
+  return React.createElement("div",{style:{position:"relative",overflow:"hidden",borderRadius:12,marginBottom:2,flexShrink:0,
     animation:justLogged?"shiftPop 0.65s ease,shiftGlow 0.65s ease":"none"
   }},
     // Swipe-behind layer (clear) — only visible while swiping

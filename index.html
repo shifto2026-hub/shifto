@@ -621,7 +621,7 @@ const SummaryTile = ({weekStats,totalHours,totalPay,monthPay,monthHours,weekKey,
   const isSTDark = (theme||"dark")==="dark";
   const STbg  = isSTDark ? BG  : "#f5f0e8";
   const STbg2 = isSTDark ? BG2 : "#ffffff";
-  const STbdr = isSTDark ? BORDER : "#e8e0cc";
+  const STbdr = isSTDark ? BORDER : "rgba(26,39,68,0.1)";
   const STt3  = isSTDark ? TEXT3  : "#6a7a9a";
   const STt2  = isSTDark ? TEXT2  : "#1a2744";
   const accent = accentColor||BLUE;
@@ -789,7 +789,7 @@ const SummaryTile = ({weekStats,totalHours,totalPay,monthPay,monthHours,weekKey,
   const goalPct = goalAmt > 0 ? Math.min(100, Math.round(finalMonth / goalAmt * 100)) : 0;
 
   return React.createElement("div",{style:{
-    borderTop:`2px solid ${STbdr}`,
+    borderTop:`1px solid ${isSTDark?"#3a4f80":"rgba(26,39,68,0.1)"}`,
     background:STbg2,flexShrink:0,
     paddingBottom:"env(safe-area-inset-bottom, 6px)"
   }},
@@ -1190,7 +1190,7 @@ const ShiftRow = ({date,shift,partnerWorking,clashAgencies,onOpen,onClear,onCopy
 
   // Theme-aware row colours — navy/gold palette
   const cardBg   = isDark ? "#243460" : "#ffffff";
-  const cardBdr  = isDark ? "#3a4f80" : "#e8e0cc";
+  const cardBdr  = isDark ? "#3a4f80" : "rgba(26,39,68,0.1)";
   const dayColor = isDark ? "#9a8e70" : "#6a7a9a";
   const dateColorOff  = isDark ? "#4a5f90" : "#6a7a9a";
   const dateColorWork = isDark ? "#f5f0e8" : "#1a2744";
@@ -1313,7 +1313,7 @@ const WeeklyView = ({agencies,shifts,setShifts,weekStartDay,accentColor,presets,
   const WBG    = isWDark ? BG    : "#f5f0e8";
   const WBG2   = isWDark ? BG2   : "#ffffff";
   const WBG3   = isWDark ? BG3   : "#ede6d8";
-  const WBDR   = isWDark ? BORDER: "#e8e0cc";
+  const WBDR   = isWDark ? BORDER: "rgba(26,39,68,0.1)";
   const WTXT2  = isWDark ? TEXT2 : "#1a2744";
   const WTXT3  = isWDark ? TEXT3 : "#6a7a9a";
   const today = localDate();
@@ -1432,19 +1432,19 @@ const WeeklyView = ({agencies,shifts,setShifts,weekStartDay,accentColor,presets,
 
   return React.createElement("div",{style:{display:"flex",flexDirection:"column",flex:1,minHeight:0,overflow:"hidden",position:"relative"}},
     // Controls
-    React.createElement("div",{style:{flexShrink:0,padding:"14px 14px 14px",background:WBG,borderBottom:`1px solid ${WBDR}`}},
-      React.createElement("div",{style:{display:"flex",alignItems:"center",gap:8,marginBottom:14}},
-        React.createElement("button",{onClick:()=>setOffset(o=>o-1),style:{background:WBG2,border:`1px solid ${WBDR}`,borderRadius:10,color:WTXT3,padding:"7px 14px",cursor:"pointer",fontSize:17}},"‹"),
+    React.createElement("div",{style:{flexShrink:0,padding:"10px 14px 10px",background:WBG,borderBottom:`1px solid ${isWDark?"#3a4f80":"rgba(26,39,68,0.08)"}`}},
+      React.createElement("div",{style:{display:"flex",alignItems:"center",gap:8,marginBottom:10}},
+        React.createElement("button",{onClick:()=>setOffset(o=>o-1),style:{background:WBG2,border:`1px solid ${isWDark?WBDR:"rgba(26,39,68,0.12)"}`,borderRadius:10,color:WTXT3,padding:"5px 13px",cursor:"pointer",fontSize:17}},"‹"),
         React.createElement("div",{style:{flex:1,textAlign:"center"}},
-          React.createElement("div",{style:{fontSize:14,fontWeight:700,color:WTXT2,fontFamily:"'DM Sans',sans-serif"}},weekLabel(weekKey)),
-          isCurrentWeek&&React.createElement("div",{style:{fontSize:10,color:accent,fontWeight:700,fontFamily:"'DM Sans',sans-serif",letterSpacing:"0.06em"}},"CURRENT WEEK")
+          React.createElement("div",{style:{fontSize:13,fontWeight:700,color:WTXT2,fontFamily:"'DM Sans',sans-serif"}},weekLabel(weekKey)),
+          isCurrentWeek&&React.createElement("div",{style:{fontSize:9,color:accent,fontWeight:700,fontFamily:"'DM Sans',sans-serif",letterSpacing:"0.06em"}},"CURRENT WEEK")
         ),
-        React.createElement("button",{onClick:()=>setOffset(o=>o+1),style:{background:WBG2,border:`1px solid ${WBDR}`,borderRadius:10,color:WTXT3,padding:"7px 14px",cursor:"pointer",fontSize:17}},"›"),
-        !isCurrentWeek&&React.createElement("button",{onClick:()=>setOffset(0),style:{background:WBG2,border:`1px solid ${WBDR}`,borderRadius:9,color:accent,padding:"7px 10px",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:700}},"Today")
+        React.createElement("button",{onClick:()=>setOffset(o=>o+1),style:{background:WBG2,border:`1px solid ${isWDark?WBDR:"rgba(26,39,68,0.12)"}`,borderRadius:10,color:WTXT3,padding:"5px 13px",cursor:"pointer",fontSize:17}},"›"),
+        !isCurrentWeek&&React.createElement("button",{onClick:()=>setOffset(0),style:{background:WBG2,border:`1px solid ${isWDark?WBDR:"rgba(26,39,68,0.12)"}`,borderRadius:9,color:accent,padding:"5px 10px",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:700}},"Today")
       ),
       React.createElement("div",{style:{display:"flex",gap:7,marginBottom:timesheetDueToday.length>0?8:0}},
         agencies.map(ag=>
-          React.createElement("button",{key:ag.id,onClick:()=>setActiveAg(ag.id),style:{flex:1,padding:"10px 8px",borderRadius:10,cursor:"pointer",background:activeAg===ag.id?(isWDark?`${ag.color}22`:"#c9a843"):WBG2,border:`1.5px solid ${activeAg===ag.id?(isWDark?ag.color:"#c9a843"):WBDR}`,color:activeAg===ag.id?(isWDark?ag.color:"#1a2744"):WTXT2,fontFamily:"'DM Sans',sans-serif",fontWeight:800,fontSize:13,transition:"all 0.18s",boxShadow:activeAg===ag.id&&!isWDark?"0 2px 8px rgba(201,168,67,0.3)":"none"}},ag.name)
+          React.createElement("button",{key:ag.id,onClick:()=>setActiveAg(ag.id),style:{flex:1,padding:"8px",borderRadius:10,cursor:"pointer",background:activeAg===ag.id?(isWDark?`${ag.color}22`:"#c9a843"):WBG2,border:`1.5px solid ${activeAg===ag.id?(isWDark?ag.color:"#c9a843"):(isWDark?WBDR:"rgba(26,39,68,0.12)")}`,color:activeAg===ag.id?(isWDark?ag.color:"#1a2744"):WTXT2,fontFamily:"'DM Sans',sans-serif",fontWeight:800,fontSize:13,transition:"all 0.18s",boxShadow:activeAg===ag.id&&!isWDark?"0 2px 8px rgba(201,168,67,0.3)":"none"}},ag.name)
         )
       ),
       // Timesheet due banner — only shows on days when a reminder is scheduled

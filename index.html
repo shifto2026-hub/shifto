@@ -2619,11 +2619,12 @@ const MonthlyGoalCard = ({allRows, person, prefs, setPrefs, agencyMonthStats, pa
       background:"linear-gradient(135deg,#1e2c4d 0%,#1a2744 55%,#22335a 100%)",
       borderRadius:16,padding:"14px 14px 12px",
       border:"1px solid rgba(255,255,255,0.10)",
-      boxShadow:"0 4px 14px rgba(26,39,68,0.28)"
+      boxShadow:"0 4px 14px rgba(26,39,68,0.28)",
+      color:"#ffffff"
     }},
       // Header: title + Edit button
       React.createElement("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}},
-        React.createElement("div",{style:{fontSize:11,fontWeight:800,color:NW,textTransform:"uppercase",letterSpacing:"0.06em",fontFamily:"'DM Sans',sans-serif"}},
+        React.createElement("div",{style:{fontSize:12,fontWeight:800,color:"#ffffff",textTransform:"uppercase",letterSpacing:"0.06em",fontFamily:"'DM Sans',sans-serif",opacity:1}},
           "MONTHLY GOAL — "+monthLabel.toUpperCase()
         ),
         React.createElement("button",{
@@ -2652,14 +2653,14 @@ const MonthlyGoalCard = ({allRows, person, prefs, setPrefs, agencyMonthStats, pa
         React.createElement("div",{style:{display:"flex",alignItems:"center",gap:14,marginBottom:10}},
           jarIcon,
           React.createElement("div",{style:{flex:1,minWidth:0}},
-            React.createElement("div",{style:{fontSize:16,fontWeight:700,color:NW,fontFamily:"'DM Mono',monospace",fontVariantNumeric:"tabular-nums",letterSpacing:"-0.01em",marginBottom:7}},
+            React.createElement("div",{style:{fontSize:16,fontWeight:700,color:"#ffffff",fontFamily:"'DM Mono',monospace",fontVariantNumeric:"tabular-nums",letterSpacing:"-0.01em",marginBottom:7}},
               fmtGBP(monthEarned)+" / "+fmtGBP(goal)
             ),
             React.createElement("div",{style:{height:9,borderRadius:5,background:"rgba(120,140,180,0.3)",overflow:"hidden"}},
               React.createElement("div",{style:{height:"100%",width:Math.round(pct)+"%",borderRadius:5,background:NG,transition:"width 0.7s ease"}})
             )
           ),
-          React.createElement("div",{style:{fontSize:22,fontWeight:800,color:NW,fontFamily:"'DM Mono',monospace",fontVariantNumeric:"tabular-nums",flexShrink:0}},
+          React.createElement("div",{style:{fontSize:22,fontWeight:800,color:"#ffffff",fontFamily:"'DM Mono',monospace",fontVariantNumeric:"tabular-nums",flexShrink:0}},
             Math.round(pct)+"%"
           )
         ),
@@ -2668,7 +2669,7 @@ const MonthlyGoalCard = ({allRows, person, prefs, setPrefs, agencyMonthStats, pa
           React.createElement("div",{style:{fontSize:13,fontWeight:800,color:NG,fontFamily:"'DM Sans',sans-serif"}},"🎉 "+rewards+" reward"+(rewards!==1?"s":"")+" earned — "+fmtGBP(rewardAmt)+" to treat yourself!")
         ),
         // Footer text
-        React.createElement("div",{style:{textAlign:"center",fontSize:11,color:NL,fontFamily:"'DM Sans',sans-serif",fontVariantNumeric:"tabular-nums"}},
+        React.createElement("div",{style:{textAlign:"center",fontSize:11,color:"rgba(255,255,255,0.7)",fontFamily:"'DM Sans',sans-serif",fontVariantNumeric:"tabular-nums"}},
           pct>=100 ? "🎉 Goal reached!" :
           rewards>0 ? "£"+toNext.toFixed(2)+" to next reward (+"+fmtGBP(reward)+")" :
           "£"+toNext.toFixed(2)+" to reach your goal this month"

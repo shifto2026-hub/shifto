@@ -351,7 +351,7 @@ const triggerAutoSync = () => { if (_autoSyncFn) _autoSyncFn(); };
 
 // ─── Base Components ──────────────────────────────────────────────────────────
 // th = optional theme-token object {bg,bg2,border,border2,text,text2,text3}
-const C = ({children,style,th}) => React.createElement("div",{style:{background:th?th.card:BG2,borderRadius:14,padding:"14px 16px",marginBottom:10,border:`1px solid ${th?th.cardBorder:BORDER}`,...style}},children);
+const C = ({children,style,th}) => React.createElement("div",{className:"sx-card",style:{background:th?th.card:BG2,borderRadius:14,padding:"14px 16px",marginBottom:10,border:`1px solid ${th?th.cardBorder:BORDER}`,...style}},children);
 const SL = ({children,th}) => React.createElement("div",{style:{fontSize:11,fontWeight:700,color:th?th.sectionLabel:TEXT3,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:8,marginTop:20,fontFamily:"'DM Sans',sans-serif"}},children);
 const FL = ({children,th}) => React.createElement("div",{style:{fontSize:11,fontWeight:700,color:th?th.sectionLabel:TEXT3,letterSpacing:"0.07em",textTransform:"uppercase",marginBottom:7,fontFamily:"'DM Sans',sans-serif"}},children);
 const In = ({style,th,...p}) => React.createElement("input",{...p,style:{background:th?th.input:BG,border:`1px solid ${th?th.inputBorder:BORDER2}`,borderRadius:12,color:th?th.text:TEXT,padding:"13px 16px",fontSize:16,width:"100%",boxSizing:"border-box",fontFamily:"'DM Sans',sans-serif",outline:"none",WebkitAppearance:"none",...style}});
@@ -403,7 +403,7 @@ const DeleteConfirm = ({onDelete}) => {
   return !asked
     ? React.createElement("button",{onClick:()=>setAsked(true),style:{width:"100%",marginTop:8,padding:"10px",borderRadius:10,background:"transparent",border:`1px solid ${RED}44`,color:RED,fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:13,cursor:"pointer"}},"Remove Workplace")
     : React.createElement("div",{style:{display:"flex",gap:8,marginTop:8}},
-        React.createElement("button",{onClick:onDelete,style:{flex:1,padding:"10px",borderRadius:10,background:RED,border:"none",color:"#fff",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:13,cursor:"pointer"}},"Yes, Remove"),
+        React.createElement("button",{"data-keep":"1",onClick:onDelete,style:{flex:1,padding:"10px",borderRadius:10,background:RED,border:"none",color:"#fff",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:13,cursor:"pointer"}},"Yes, Remove"),
         React.createElement("button",{onClick:()=>setAsked(false),style:{flex:1,padding:"10px",borderRadius:10,background:BG2,border:`1px solid ${BORDER}`,color:TEXT3,fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:13,cursor:"pointer"}},"Cancel")
       );
 };
@@ -585,7 +585,7 @@ const AppHeader = ({appName,myAgencies,partnerAgencies,tab,onTabChange,tabs,them
       )
     ),
     // Tab strip — gold bottom bar separates header from content
-    React.createElement("div",{style:{height:52,display:"flex",borderTop:"1px solid rgba(255,255,255,0.08)",borderBottom:"3px solid #c9a843",padding:"0 4px"}},
+    React.createElement("div",{style:{height:52,display:"flex",borderTop:"1px solid rgba(255,255,255,0.08)",borderBottom:"4px solid #c9a843",padding:"0 4px"}},
       (tabs||[]).map(t=>{
         const isActive = tab===t.id;
         const icon = tabIcons[t.id];
@@ -788,7 +788,7 @@ const SummaryTile = ({weekStats,totalHours,totalPay,monthPay,monthHours,weekKey,
   const goalPct = goalAmt > 0 ? Math.min(100, Math.round(finalMonth / goalAmt * 100)) : 0;
 
   return React.createElement("div",{style:{
-    borderTop:"3px solid #c9a843",
+    borderTop:"4px solid #c9a843",
     background:STbg2,flexShrink:0,
     paddingBottom:"calc(env(safe-area-inset-bottom, 0px) + 6px)"
   }},
@@ -916,7 +916,7 @@ const SummaryTile = ({weekStats,totalHours,totalPay,monthPay,monthHours,weekKey,
         // Refund / Owe toggle
         React.createElement("div",{style:{display:"flex",gap:6,marginBottom:8}},
           ["refund","owe"].map(t=>
-            React.createElement("button",{key:t,
+            React.createElement("button",{"data-on":String(taxAdjType===t),key:t,
               onClick:()=>{
                 setTaxAdjType(t);
                 const v = parseFloat(taxAdjInput)||0;
@@ -1025,12 +1025,12 @@ const ShiftPanel = ({date,shift,color,onSave,onClose,presets,allShifts,agencyId,
         React.createElement("div",{style:{fontSize:13,fontWeight:700,color:isWorking?BLUE:P.text3,letterSpacing:"0.08em",textTransform:"uppercase",fontFamily:"'DM Sans',sans-serif",marginBottom:4}},dayName2),
         React.createElement("div",{style:{fontSize:28,fontWeight:900,color:P.text,fontFamily:"'DM Sans',sans-serif",lineHeight:1.1,marginBottom:16}},dayDate),
         React.createElement("div",{style:{display:"flex",background:P.toggle,borderRadius:14,padding:4,gap:4}},
-          React.createElement("button",{onClick:()=>setLocal(s=>({...s,working:true})),style:{
+          React.createElement("button",{"data-on":String(isWorking),onClick:()=>setLocal(s=>({...s,working:true})),style:{
             flex:1,padding:"10px 0",borderRadius:10,border:"none",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:800,fontSize:14,transition:"all 0.2s",
             background:isWorking?BLUE:"transparent",color:isWorking?"#fff":P.text3,
             boxShadow:isWorking?`0 2px 12px ${BLUE}55`:"none"
           }},"✦  Working"),
-          React.createElement("button",{onClick:()=>setLocal(s=>({...s,working:false})),style:{
+          React.createElement("button",{"data-on":String(!isWorking),onClick:()=>setLocal(s=>({...s,working:false})),style:{
             flex:1,padding:"10px 0",borderRadius:10,border:"none",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:800,fontSize:14,transition:"all 0.2s",
             background:!isWorking?P.closeBtn:"transparent",color:!isWorking?P.text2:P.text3
           }},"✦  Day Off")
@@ -1047,7 +1047,7 @@ const ShiftPanel = ({date,shift,color,onSave,onClose,presets,allShifts,agencyId,
             React.createElement(FL,null,"Quick pick"),
             React.createElement("div",{style:{display:"flex",gap:8,flexWrap:"wrap"}},
               presets.map(p=>
-                React.createElement("button",{key:p.label,
+                React.createElement("button",{"data-on":String(local.startTime===p.start&&local.endTime===p.end),key:p.label,
                   onClick:()=>setLocal(s=>({...s,working:true,startTime:p.start,endTime:p.end})),
                   style:{padding:"9px 16px",borderRadius:10,fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:13,cursor:"pointer",transition:"all 0.15s",border:"none",
                     background:local.startTime===p.start&&local.endTime===p.end?BLUE:`${BLUE}18`,
@@ -1225,7 +1225,7 @@ const ShiftRow = ({date,shift,partnerWorking,clashAgencies,onOpen,onClear,onCopy
     }},
       React.createElement("span",{style:{fontSize:13,color:RED,fontFamily:"'DM Sans',sans-serif",fontWeight:700}},"Clear this shift?"),
       React.createElement("div",{style:{display:"flex",gap:8}},
-        React.createElement("button",{onClick:()=>{onClear();setConfirmed(false);},style:{padding:"7px 14px",borderRadius:8,background:RED,border:"none",color:"#fff",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:13,cursor:"pointer"}},"Clear"),
+        React.createElement("button",{"data-keep":"1",onClick:()=>{onClear();setConfirmed(false);},style:{padding:"7px 14px",borderRadius:8,background:RED,border:"none",color:"#fff",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:13,cursor:"pointer"}},"Clear"),
         React.createElement("button",{onClick:()=>setConfirmed(false),style:{padding:"7px 14px",borderRadius:8,background:BG3,border:`1px solid ${BORDER}`,color:TEXT3,fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:13,cursor:"pointer"}},"Keep")
       )
     ),
@@ -1443,7 +1443,7 @@ const WeeklyView = ({agencies,shifts,setShifts,weekStartDay,accentColor,presets,
       ),
       React.createElement("div",{style:{display:"flex",gap:7,marginBottom:timesheetDueToday.length>0?8:0}},
         agencies.map(ag=>
-          React.createElement("button",{key:ag.id,onClick:()=>setActiveAg(ag.id),style:{flex:1,padding:"8px",borderRadius:10,cursor:"pointer",background:activeAg===ag.id?(isWDark?`${ag.color}22`:"#c9a843"):WBG2,border:`1.5px solid ${activeAg===ag.id?(isWDark?ag.color:"#c9a843"):(isWDark?WBDR:"rgba(26,39,68,0.12)")}`,color:activeAg===ag.id?(isWDark?ag.color:"#1a2744"):WTXT2,fontFamily:"'DM Sans',sans-serif",fontWeight:800,fontSize:13,transition:"all 0.18s",boxShadow:activeAg===ag.id&&!isWDark?"0 2px 8px rgba(201,168,67,0.3)":"none"}},ag.name)
+          React.createElement("button",{"data-on":String(activeAg===ag.id),key:ag.id,onClick:()=>setActiveAg(ag.id),style:{flex:1,padding:"8px",borderRadius:10,cursor:"pointer",background:activeAg===ag.id?(isWDark?`${ag.color}22`:"#c9a843"):WBG2,border:`1.5px solid ${activeAg===ag.id?(isWDark?ag.color:"#c9a843"):(isWDark?WBDR:"rgba(26,39,68,0.12)")}`,color:activeAg===ag.id?(isWDark?ag.color:"#1a2744"):WTXT2,fontFamily:"'DM Sans',sans-serif",fontWeight:800,fontSize:13,transition:"all 0.18s",boxShadow:activeAg===ag.id&&!isWDark?"0 2px 8px rgba(201,168,67,0.3)":"none"}},ag.name)
         )
       ),
       // Timesheet due banner — only shows on days when a reminder is scheduled
@@ -1613,7 +1613,7 @@ const MiniCal = ({year,month,shifts,setShifts,agencies,label,accentColor,weekSta
     );
   };
 
-  return React.createElement("div",{style:{background:BG2,borderRadius:14,padding:"12px",border:`1px solid ${accent}33`,marginBottom:10}},
+  return React.createElement("div",{className:"sx-dark",style:{background:BG2,borderRadius:14,padding:"12px",border:`1px solid ${accent}33`,marginBottom:10}},
     React.createElement("div",{style:{fontSize:15,fontWeight:800,color:accent,fontFamily:"'DM Sans',sans-serif",marginBottom:10,display:"flex",alignItems:"center",gap:7}},
       labelIcon==="me"&&React.createElement(MoustacheIcon,{size:15,color:accent}),
       labelIcon==="partner"&&React.createElement(SunglassesIcon,{size:15,color:accent}),
@@ -1817,7 +1817,7 @@ const BothOffCal = ({year,month,myShifts,setMyShifts,partnerShifts,setPartnerShi
   };
 
   return React.createElement(React.Fragment,null,
-  React.createElement("div",{style:{background:BG2,borderRadius:14,padding:"12px",border:`1px solid rgba(240,168,154,0.20)`,marginBottom:10}},
+  React.createElement("div",{className:"sx-dark",style:{background:BG2,borderRadius:14,padding:"12px",border:`1px solid rgba(240,168,154,0.20)`,marginBottom:10}},
     React.createElement("div",{style:{fontSize:15,fontWeight:800,color:"#f0a89a",fontFamily:"'DM Sans',sans-serif",marginBottom:18}},"📅 Combined Calendar"),
     // Day headers
     React.createElement("div",{style:{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:3,marginBottom:4}},
@@ -1894,7 +1894,7 @@ const BothOffCal = ({year,month,myShifts,setMyShifts,partnerShifts,setPartnerShi
     React.createElement(TodayStrip,null)
   ),
   // ── Filter / Legend pills ──
-  React.createElement("div",{style:{background:BG2,borderRadius:14,padding:"12px 14px",border:`1px solid ${BORDER}`,marginTop:10}},
+  React.createElement("div",{className:"sx-dark",style:{background:BG2,borderRadius:14,padding:"12px 14px",border:`1px solid ${BORDER}`,marginTop:10}},
     React.createElement("div",{style:{fontSize:10,fontWeight:700,color:TEXT3,letterSpacing:"0.08em",textTransform:"uppercase",fontFamily:"'DM Sans',sans-serif",marginBottom:8}},"Filter by"),
     React.createElement("div",{style:{display:"flex",gap:6,flexWrap:"wrap"}},
       [
@@ -2311,13 +2311,13 @@ const PaymentTracker = ({myAgencies,myShifts,partnerAgencies,partnerShifts,myPay
     React.createElement("div",{style:{flexShrink:0,padding:"12px 14px 10px",borderBottom:`1px solid ${bdr}`}},
       React.createElement("div",{style:{display:"flex",gap:8,marginBottom: showFilter?10:0}},
         [["me",myName],["partner",partName]].map(([id,label])=>
-          React.createElement("button",{key:id,onClick:()=>setPerson(id),
+          React.createElement("button",{"data-on":String(person===id),key:id,onClick:()=>setPerson(id),
             style:{flex:1,padding:"8px",borderRadius:9,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontSize:13,fontWeight:700,
               background:person===id?(T.isDark?"#3ecf6e22":"#e8f5ee"):bg3,
               border:`1px solid ${person===id?GREEN_C:bdr}`,
               color:person===id?GREEN_C:txt3,transition:"all 0.15s"}},label)
         ),
-        React.createElement("button",{onClick:()=>setShowFilter(s=>!s),
+        React.createElement("button",{"data-on":String(!!hasFilter),onClick:()=>setShowFilter(s=>!s),
           style:{padding:"8px 12px",borderRadius:9,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontSize:13,fontWeight:700,
             background:hasFilter?"#3ecf6e22":bg3,
             border:`1px solid ${hasFilter?GREEN_C:bdr}`,
@@ -2718,7 +2718,7 @@ const TimesheetReminder = ({agencies, person, prefs, setPrefs, T}) => {
             React.createElement("div",{style:{fontSize:10,fontWeight:700,color:txt3,textTransform:"uppercase",letterSpacing:"0.06em",fontFamily:"'DM Sans',sans-serif",marginBottom:6}},"Frequency"),
             React.createElement("div",{style:{display:"flex",gap:6}},
               ["weekly","monthly"].map(f=>
-                React.createElement("button",{key:f,onClick:()=>upsertReminder(ag.id,"freq",f),style:{
+                React.createElement("button",{"data-on":String(r.freq===f),key:f,onClick:()=>upsertReminder(ag.id,"freq",f),style:{
                   flex:1,padding:"7px 0",borderRadius:8,cursor:"pointer",
                   background:r.freq===f?`${ag.color}22`:"transparent",
                   border:`1px solid ${r.freq===f?ag.color:bdr}`,
@@ -2733,7 +2733,7 @@ const TimesheetReminder = ({agencies, person, prefs, setPrefs, T}) => {
             ? React.createElement("div",null,
                 React.createElement("div",{style:{fontSize:10,fontWeight:700,color:txt3,textTransform:"uppercase",letterSpacing:"0.06em",fontFamily:"'DM Sans',sans-serif",marginBottom:6}},"Remind on"),
                 React.createElement("div",{style:{display:"flex",gap:4}},
-                  DAYS.map((d,i)=>React.createElement("button",{key:i,onClick:()=>upsertReminder(ag.id,"dayOfWeek",i),style:{
+                  DAYS.map((d,i)=>React.createElement("button",{"data-on":String((r.dayOfWeek||0)===i),key:i,onClick:()=>upsertReminder(ag.id,"dayOfWeek",i),style:{
                     flex:1,padding:"6px 0",borderRadius:7,cursor:"pointer",
                     background:(r.dayOfWeek||0)===i?`${ag.color}22`:"transparent",
                     border:`1px solid ${(r.dayOfWeek||0)===i?ag.color:bdr}`,
@@ -3078,7 +3078,7 @@ const PayslipChecker = ({myAgencies,myShifts,partnerAgencies,partnerShifts,prefs
 
   const personToggle = React.createElement("div",{style:{display:"flex",gap:8,marginBottom:16}},
     ["me","partner"].map(p=>
-      React.createElement("button",{key:p,onClick:()=>{setPerson(p);setResult(null);setError("");},
+      React.createElement("button",{"data-on":String(person===p),key:p,onClick:()=>{setPerson(p);setResult(null);setError("");},
         style:{flex:1,padding:"9px 0",borderRadius:9,border:`1.5px solid ${person===p?acc:bdr2}`,
           background:person===p?acc+"22":"transparent",color:person===p?acc:txt2,
           fontFamily:"'DM Sans',sans-serif",fontSize:13,fontWeight:700,cursor:"pointer"}},
@@ -3175,7 +3175,7 @@ const PayslipChecker = ({myAgencies,myShifts,partnerAgencies,partnerShifts,prefs
     // Sub-tab switcher
     React.createElement("div",{style:{flexShrink:0,display:"flex",gap:0,padding:"12px 10px 0",background:bg,overflowX:"auto",WebkitOverflowScrolling:"touch"}},
       [["tracker","💳 Pay"],["checker","🔍 Check"],["reminders","🔔 Remind"],["versus","🏆 VS"]].map(([id,label])=>
-        React.createElement("button",{key:id,onClick:()=>setSubTab(id),
+        React.createElement("button",{"data-on":String(subTab===id),key:id,onClick:()=>setSubTab(id),
           style:{flexShrink:0,padding:"9px 10px",borderRadius:"10px 10px 0 0",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",
             fontSize:11,fontWeight:700,border:`1px solid ${bdr}`,
             borderBottom:subTab===id?`1px solid ${bg2}`:`1px solid ${bdr}`,
@@ -3242,13 +3242,13 @@ const PayslipChecker = ({myAgencies,myShifts,partnerAgencies,partnerShifts,prefs
           React.createElement("div",{key:a.id,style:{marginBottom:8,background:bg3,borderRadius:9,padding:"10px 10px 8px",border:`1px solid ${bdr}`}},
             // Type toggle + remove
             React.createElement("div",{style:{display:"flex",gap:6,marginBottom:8,alignItems:"center"}},
-              React.createElement("button",{onClick:()=>updateAdj(a.id,"type","add"),
+              React.createElement("button",{"data-on":String(a.type==="add"),onClick:()=>updateAdj(a.id,"type","add"),
                 style:{flex:1,padding:"6px 0",borderRadius:6,border:`1.5px solid ${a.type==="add"?"#4ade80":bdr2}`,
                   background:a.type==="add"?"#4ade8022":"transparent",color:a.type==="add"?"#4ade80":txt3,
                   fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:700,cursor:"pointer"}},
                 "▲ Enhancement"
               ),
-              React.createElement("button",{onClick:()=>updateAdj(a.id,"type","deduct"),
+              React.createElement("button",{"data-on":String(a.type==="deduct"),onClick:()=>updateAdj(a.id,"type","deduct"),
                 style:{flex:1,padding:"6px 0",borderRadius:6,border:`1.5px solid ${a.type==="deduct"?"#f87171":bdr2}`,
                   background:a.type==="deduct"?"#f8717122":"transparent",color:a.type==="deduct"?"#f87171":txt3,
                   fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:700,cursor:"pointer"}},
@@ -3364,7 +3364,7 @@ const ReportsView = ({myAgencies,myShifts,setMyShifts,partnerAgencies,partnerShi
     React.createElement("div",{style:{flexShrink:0,padding:"14px 14px 10px",background:RBG,borderBottom:`1px solid ${RBDR}`}},
       React.createElement("div",{style:{display:"flex",gap:4,background:RBG2,borderRadius:12,padding:4,border:`1px solid ${RBDR}`}},
         [["combined",null],["mine",null],["partner",null]].map(([id])=>
-          React.createElement("button",{key:id,onClick:()=>setTab(id),style:{
+          React.createElement("button",{"data-on":String(tab===id),key:id,onClick:()=>setTab(id),style:{
             flex:1,padding:"8px 4px",borderRadius:8,cursor:"pointer",
             background:tab===id?(id==="combined"?GREEN:id==="partner"?ORANGE:RACC):"none",
             border:"none",color:tab===id?"#fff":RTXT3,
@@ -3390,7 +3390,7 @@ const ReportsView = ({myAgencies,myShifts,setMyShifts,partnerAgencies,partnerShi
       tab!=="combined"&&React.createElement("div",null,
         React.createElement("div",{style:{display:"flex",gap:6,background:RBG2,borderRadius:10,padding:3,marginBottom:12,border:`1px solid ${RBDR}`}},
           [["monthly","Month"],["yearly","Year"]].map(([id,lbl])=>
-            React.createElement("button",{key:id,onClick:()=>setMode(id),style:{flex:1,padding:"7px",borderRadius:8,cursor:"pointer",background:mode===id?RACC:"none",border:"none",color:mode===id?"#fff":RTXT3,fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:12}},lbl)
+            React.createElement("button",{"data-on":String(mode===id),key:id,onClick:()=>setMode(id),style:{flex:1,padding:"7px",borderRadius:8,cursor:"pointer",background:mode===id?RACC:"none",border:"none",color:mode===id?"#fff":RTXT3,fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:12}},lbl)
           )
         ),
         React.createElement("div",{style:{display:"flex",gap:8,marginBottom:12}},
@@ -3509,7 +3509,7 @@ const RotaDayPicker = ({label,days,onChange}) => {
     React.createElement("div",{style:{display:"flex",gap:6,marginBottom:10,flexWrap:"wrap"}},
       DAY_NAMES.map((dn,i)=>{
         const active=!!days.find(d=>d.dayOfWeek===i);
-        return React.createElement("button",{key:i,onClick:()=>toggle(i),style:{
+        return React.createElement("button",{"data-on":String(!!active),key:i,onClick:()=>toggle(i),style:{
           padding:"7px 10px",borderRadius:8,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",
           fontWeight:700,fontSize:12,border:"none",transition:"all 0.15s",
           background:active?ORANGE:`${ORANGE}18`,color:active?"#fff":TEXT3
@@ -4170,7 +4170,7 @@ const PayDetailsModal = ({th,prefs,setPrefs,myAgencies,partnerAgencies,onClose})
         // Who tab
         React.createElement("div",{style:{display:"flex",gap:8,marginBottom:18}},
           ["me","partner"].map(w=>
-            React.createElement("button",{key:w,onClick:()=>setWho(w),style:{
+            React.createElement("button",{"data-on":String(who===w),key:w,onClick:()=>setWho(w),style:{
               flex:1,padding:"9px",borderRadius:10,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:13,
               background:who===w?BLUE:"transparent",
               border:`1px solid ${who===w?BLUE:MBDR}`,
@@ -4428,7 +4428,7 @@ const TaxRatesModal = ({th, onClose, onRatesChanged}) => {
                   React.createElement("button",{onClick:()=>startEdit(year),style:{padding:"6px 12px",borderRadius:8,background:`${BLUE}18`,border:`1px solid ${BLUE}44`,color:BLUE,fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:12,cursor:"pointer"}},"Edit"),
                   !isBuiltin(year) && (
                     confirmDelete===year
-                      ? React.createElement("button",{onClick:()=>deleteYear(year),style:{padding:"6px 12px",borderRadius:8,background:`${RED}22`,border:`1px solid ${RED}55`,color:RED,fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:12,cursor:"pointer"}},"Confirm")
+                      ? React.createElement("button",{"data-keep":"1",onClick:()=>deleteYear(year),style:{padding:"6px 12px",borderRadius:8,background:`${RED}22`,border:`1px solid ${RED}55`,color:RED,fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:12,cursor:"pointer"}},"Confirm")
                       : React.createElement("button",{onClick:()=>setConfirmDelete(year),style:{padding:"6px 12px",borderRadius:8,background:"transparent",border:`1px solid ${MBDR}`,color:MTXT3,fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:12,cursor:"pointer"}},"✕")
                   )
                 )
@@ -4559,13 +4559,13 @@ const SettingsView = ({myAgencies,setMyAgencies,partnerAgencies,setPartnerAgenci
       React.createElement(FL,{th},"Summary Card Shows"),
       React.createElement("div",{style:{display:"flex",gap:8,marginBottom:14}},
         ["weekly","monthly"].map(opt=>
-          React.createElement("button",{key:opt,onClick:()=>setPrefs(p=>({...p,summaryPeriod:opt})),style:{flex:1,padding:"9px 0",borderRadius:8,border:`1px solid ${(prefs.summaryPeriod||"weekly")===opt?acBlue:acBorder2}`,background:(prefs.summaryPeriod||"weekly")===opt?acBlue:"transparent",color:(prefs.summaryPeriod||"weekly")===opt?"#fff":acText,fontWeight:700,fontSize:13,fontFamily:"'DM Sans',sans-serif",cursor:"pointer",textTransform:"capitalize"}},opt)
+          React.createElement("button",{"data-on":String((prefs.summaryPeriod||"weekly")===opt),key:opt,onClick:()=>setPrefs(p=>({...p,summaryPeriod:opt})),style:{flex:1,padding:"9px 0",borderRadius:8,border:`1px solid ${(prefs.summaryPeriod||"weekly")===opt?acBlue:acBorder2}`,background:(prefs.summaryPeriod||"weekly")===opt?acBlue:"transparent",color:(prefs.summaryPeriod||"weekly")===opt?"#fff":acText,fontWeight:700,fontSize:13,fontFamily:"'DM Sans',sans-serif",cursor:"pointer",textTransform:"capitalize"}},opt)
         )
       ),
       React.createElement(FL,{th},"Week Starts On"),
       React.createElement("div",{style:{display:"flex",flexWrap:"wrap",gap:6}},
         WEEK_DAYS.map(wd=>
-          React.createElement("button",{key:wd.v,onClick:()=>setPrefs(p=>({...p,weekStartDay:wd.v,_userChoseDay:true})),
+          React.createElement("button",{"data-on":String(prefs.weekStartDay===wd.v),key:wd.v,onClick:()=>setPrefs(p=>({...p,weekStartDay:wd.v,_userChoseDay:true})),
             style:{padding:"7px 13px",borderRadius:9,cursor:"pointer",background:prefs.weekStartDay===wd.v?acBlue:"transparent",border:`1px solid ${prefs.weekStartDay===wd.v?acBlue:acBorder2}`,color:prefs.weekStartDay===wd.v?"#fff":acText3,fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:12,transition:"all 0.15s"}},wd.l)
         )
       ),
@@ -4573,7 +4573,7 @@ const SettingsView = ({myAgencies,setMyAgencies,partnerAgencies,setPartnerAgenci
       React.createElement("div",{style:{marginTop:14}},
         React.createElement(FL,{th},"App theme"),
         React.createElement("div",{style:{display:"flex",gap:6}},
-          React.createElement("button",{
+          React.createElement("button",{"data-on":String((prefs.theme||"dark")==="dark"),
             onClick:()=>setPrefs(p=>({...p,theme:"dark"})),
             style:{flex:1,padding:"8px 12px",borderRadius:9,cursor:"pointer",
               background:(prefs.theme||"dark")==="dark"?acBlue:"transparent",
@@ -4582,7 +4582,7 @@ const SettingsView = ({myAgencies,setMyAgencies,partnerAgencies,setPartnerAgenci
               fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:13,transition:"all 0.15s"
             }
           },"🌑 Dark"),
-          React.createElement("button",{
+          React.createElement("button",{"data-on":String((prefs.theme||"dark")==="light"),
             onClick:()=>setPrefs(p=>({...p,theme:"light"})),
             style:{flex:1,padding:"8px 12px",borderRadius:9,cursor:"pointer",
               background:(prefs.theme||"dark")==="light"?acBlue:"transparent",
@@ -5018,10 +5018,19 @@ function App() {
       select option{background:${T.bg2};color:${T.text};}
       ::-webkit-scrollbar{width:0;}
       #root{height:100%;}
+      ${isDark?"":`
+      .sx-light *:not(button):not(button *):not(.sx-dark):not(.sx-dark *){color:#1a2744 !important;}
+      .sx-light .sx-card:not(.sx-dark *){background:#ffffff !important;border-color:#e8e0cc !important;}
+      .sx-light input:not([type=checkbox]):not([type=radio]):not([type=range]):not(.sx-dark *),.sx-light textarea:not(.sx-dark *),.sx-light select:not(.sx-dark *){background-color:#ffffff !important;border-color:rgba(201,168,67,0.38) !important;}
+      .sx-light button:not([data-keep]){background:#1a2744 !important;color:#c9a843 !important;border-color:#1a2744 !important;box-shadow:none !important;}
+      .sx-light button:not([data-keep]) *{color:#c9a843 !important;}
+      .sx-light button[data-on="false"],.sx-light button[data-on="false"] *{color:rgba(201,168,67,0.62) !important;}
+      .sx-light button[data-on="true"]{box-shadow:inset 0 0 0 2px #c9a843 !important;}
+      `}
     `),
     React.createElement("div",{style:{maxWidth:430,margin:"0 auto",minHeight:"100dvh",background:T.bg}},
       React.createElement(AppHeader,{appName:prefs.appName||"Shifto",myAgencies,partnerAgencies,tab,onTabChange:setTab,tabs:TABS_LIST,theme:prefs.theme||"dark",onThemeToggle,T,fbStatus}),
-      React.createElement("div",{style:{position:"fixed",top:headerHeight,bottom:0,left:0,right:0,maxWidth:430,margin:"0 auto",display:"flex",flexDirection:"column",overflow:"hidden",background:T.bg,paddingTop:0}},
+      React.createElement("div",{className:isDark?"":"sx-light",style:{position:"fixed",top:headerHeight,bottom:0,left:0,right:0,maxWidth:430,margin:"0 auto",display:"flex",flexDirection:"column",overflow:"hidden",background:T.bg,paddingTop:0}},
         tab==="week"&&React.createElement(WeeklyView,{
           key:prefs.weekStartDay,
           agencies:myAgencies,shifts:myShifts,setShifts:setMyShifts,
@@ -5046,7 +5055,9 @@ function App() {
         }),
         tab==="reports"&&React.createElement(ReportsView,{myAgencies,myShifts,setMyShifts,partnerAgencies,partnerShifts,setPartnerShifts,weekStartDay:prefs.weekStartDay,partnerName:prefs.partnerName,myName:prefs.myName||"Person 1",prefs,T,partnerPresets:PARTNER_PRESETS}),
         tab==="payslip"&&React.createElement(PayslipChecker,{myAgencies,myShifts,partnerAgencies,partnerShifts,prefs,setPrefs,T,paidLog,setPaidLog}),
-        tab==="settings"&&React.createElement(SettingsView,{myAgencies,setMyAgencies,partnerAgencies,setPartnerAgencies,shifts:myShifts,setShifts:setMyShifts,partnerShifts,setPartnerShifts,prefs,setPrefs,getAllData,onRestore,onApplyRota,T,fbSyncStatus:fbStatus})
+        tab==="settings"&&React.createElement(SettingsView,{myAgencies,setMyAgencies,partnerAgencies,setPartnerAgencies,shifts:myShifts,setShifts:setMyShifts,partnerShifts,setPartnerShifts,prefs,setPrefs,getAllData,onRestore,onApplyRota,T,fbSyncStatus:fbStatus}),
+        // Gold 1mm bottom bar on pages without the weekly summary footer
+        tab!=="week"&&tab!=="partner"&&React.createElement("div",{style:{flexShrink:0,borderTop:"4px solid #c9a843",background:"#1a2744",height:"calc(env(safe-area-inset-bottom, 0px) + 10px)"}})
       )
     )
   );

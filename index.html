@@ -2589,8 +2589,8 @@ const MonthlyGoalCard = ({allRows, person, prefs, setPrefs, agencyMonthStats, pa
   },[rewards]);
 
   const NG = "#c9a843"; // gold
-  const NW = "#ffffff";
-  const NL = "rgba(255,255,255,0.65)";
+  const NW = "#c9a843"; // use gold — white is invisible on this device
+  const NL = "rgba(201,168,67,0.75)";
 
   // Jar SVG — outlined, gold fill proportional to progress
   const jarFill = goal > 0 ? Math.min(1, jarPct/100) : 0;
@@ -2624,7 +2624,7 @@ const MonthlyGoalCard = ({allRows, person, prefs, setPrefs, agencyMonthStats, pa
     }},
       // Header: title + Edit button
       React.createElement("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}},
-        React.createElement("div",{style:{fontSize:12,fontWeight:800,color:"#ffffff",textTransform:"uppercase",letterSpacing:"0.06em",fontFamily:"'DM Sans',sans-serif",opacity:1}},
+        React.createElement("div",{style:{fontSize:12,fontWeight:800,color:NG,textTransform:"uppercase",letterSpacing:"0.06em",fontFamily:"'DM Sans',sans-serif",opacity:1}},
           "MONTHLY GOAL — "+monthLabel.toUpperCase()
         ),
         React.createElement("button",{
@@ -2653,14 +2653,14 @@ const MonthlyGoalCard = ({allRows, person, prefs, setPrefs, agencyMonthStats, pa
         React.createElement("div",{style:{display:"flex",alignItems:"center",gap:14,marginBottom:10}},
           jarIcon,
           React.createElement("div",{style:{flex:1,minWidth:0}},
-            React.createElement("div",{style:{fontSize:16,fontWeight:700,color:"#ffffff",fontFamily:"'DM Mono',monospace",fontVariantNumeric:"tabular-nums",letterSpacing:"-0.01em",marginBottom:7}},
+            React.createElement("div",{style:{fontSize:16,fontWeight:700,color:NG,fontFamily:"'DM Mono',monospace",fontVariantNumeric:"tabular-nums",letterSpacing:"-0.01em",marginBottom:7}},
               fmtGBP(monthEarned)+" / "+fmtGBP(goal)
             ),
             React.createElement("div",{style:{height:9,borderRadius:5,background:"rgba(120,140,180,0.3)",overflow:"hidden"}},
               React.createElement("div",{style:{height:"100%",width:Math.round(pct)+"%",borderRadius:5,background:NG,transition:"width 0.7s ease"}})
             )
           ),
-          React.createElement("div",{style:{fontSize:22,fontWeight:800,color:"#ffffff",fontFamily:"'DM Mono',monospace",fontVariantNumeric:"tabular-nums",flexShrink:0}},
+          React.createElement("div",{style:{fontSize:22,fontWeight:800,color:NG,fontFamily:"'DM Mono',monospace",fontVariantNumeric:"tabular-nums",flexShrink:0}},
             Math.round(pct)+"%"
           )
         ),

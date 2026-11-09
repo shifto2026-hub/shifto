@@ -107,7 +107,13 @@ const weekLabel = wk => {
   const s=new Date(wk+"T00:00:00"), e=new Date(wk+"T00:00:00"); e.setDate(e.getDate()+6);
   return `${s.toLocaleDateString("en-GB",{day:"numeric",month:"short"})} – ${e.toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"})}`;
 };
+// Paid holiday: a day off marked holiday + paid, with hours entered by the user
+const isPaidHoliday = s => !!(s && !s.working && s.isHoliday && s.holPaid);
+const holidayHours = s => isPaidHoliday(s) ? (parseFloat(s.holHours)||0) : 0;
+// "Counts for pay" = worked shift or paid holiday
+const isPaid = s => !!(s && (s.working || isPaidHoliday(s)));
 const shiftHours = s => {
+  if (isPaidHoliday(s)) return holidayHours(s);
   if (!s||!s.working||!s.startTime||!s.endTime) return 0;
   let a=toMins(s.startTime), b=toMins(s.endTime);
   if (b<=a) b+=1440;
@@ -1095,6 +1101,23 @@ const ShiftPanel = ({date,shift,color,onSave,onClose,presets,allShifts,agencyId,
               React.createElement("div",{style:{position:"absolute",top:4,left:local.isHoliday?19:4,width:16,height:16,borderRadius:"50%",background:"#fff",transition:"left 0.2s"}})
             )
           ),
+          // Paid / Unpaid holiday + hours
+          local.isHoliday&&React.createElement("div",{style:{marginTop:-6,marginBottom:14}},
+            React.createElement("div",{style:{display:"flex",gap:6,marginBottom:local.holPaid?10:0}},
+              [[true,"💷 Paid"],[false,"Unpaid"]].map(([v,l])=>
+                React.createElement("button",{key:l,"data-on":String(!!local.holPaid===v),
+                  onClick:()=>setLocal(s=>({...s,holPaid:v})),
+                  style:{flex:1,padding:"9px 0",borderRadius:10,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:13,
+                    background:!!local.holPaid===v?"#e8a020":"transparent",border:`1px solid ${!!local.holPaid===v?"#e8a020":P.border}`,
+                    color:!!local.holPaid===v?"#fff":P.text3}},l))
+            ),
+            local.holPaid&&React.createElement("div",null,
+              React.createElement(FL,null,"Paid hours"),
+              React.createElement(In,{type:"number",inputMode:"decimal",step:"0.25",min:"0",placeholder:"e.g. 12",value:local.holHours??"",
+                onChange:e=>setLocal(s=>({...s,holHours:e.target.value})),
+                style:{background:P.input,borderColor:P.inputBdr,color:P.text}})
+            )
+          ),
           React.createElement("div",{style:{marginBottom:4}},
             React.createElement(FL,null,"Note (optional)"),
             React.createElement(Ta,{placeholder:"e.g. Doctor's appointment, rest day…",value:local.note||"",onChange:e=>setLocal(s=>({...s,note:e.target.value})),style:{background:P.input,borderColor:P.inputBdr,color:P.text}})
@@ -1244,7 +1267,8 @@ const ShiftRow = ({date,shift,partnerWorking,clashAgencies,onOpen,onClear,onCopy
             : isWorking
             ? React.createElement("div",{style:{fontSize:13,color:accent,fontFamily:"'DM Sans',sans-serif",fontWeight:600}},"Tap to set times")
             : isNotWorking
-            ? (shift?.note?React.createElement("div",{style:{fontSize:11,color:dayColor,fontFamily:"'DM Sans',sans-serif",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}},"📝 "+shift.note):null)
+            ? (shift?.note?React.createElement("div",{style:{fontSize:11,color:dayColor,fontFamily:"'DM Sans',sans-serif",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}},(isPaidHoliday(shift)?"Paid holiday · ":"")+"📝 "+shift.note)
+              :isPaidHoliday(shift)?React.createElement("div",{style:{fontSize:13,color:dayColor,fontFamily:"'DM Sans',sans-serif",fontWeight:600}},"Paid holiday"):null)
             : React.createElement("div",{style:{fontSize:13,color:dayColor,fontFamily:"'DM Sans',sans-serif"}},"Tap to log")
         ),
         // Right side
@@ -1281,6 +1305,9 @@ const ShiftRow = ({date,shift,partnerWorking,clashAgencies,onOpen,onClear,onCopy
           // Hours or Off — always at the far right end
           isWorking&&hrs>0
             ? React.createElement("span",{style:{fontSize:13,fontWeight:700,color:accent,fontFamily:"'DM Mono',monospace",minWidth:32,textAlign:"right"}},fmtHours(hrs))
+            : isPaidHoliday(shift)
+            ? React.createElement("span",{style:{display:"flex",alignItems:"center",gap:5,fontSize:13,fontWeight:700,color:accent,fontFamily:"'DM Mono',monospace",textAlign:"right"}},
+                React.createElement("span",{style:{fontFamily:"'DM Sans',sans-serif",fontWeight:400}},"🏖️"),fmtHours(hrs))
             : isNotWorking
             ? React.createElement("span",{style:{fontSize:shift?.isHoliday?13:10,fontWeight:shift?.isHoliday?400:700,color:shift?.isHoliday?"inherit":`${accent}66`,fontFamily:"'DM Sans',sans-serif",letterSpacing:shift?.isHoliday?"0":"0.05em",textTransform:"uppercase",minWidth:24,textAlign:"right"}},shift?.isHoliday?"🏖️":"Off")
             : null
@@ -1340,7 +1367,7 @@ const WeeklyView = ({agencies,shifts,setShifts,weekStartDay,accentColor,presets,
     Object.keys(shifts).forEach(k=>{
       const [date,aid]=k.split("_");
       if (!date.startsWith(m)) return;
-      const sh=shifts[k]; if (!sh?.working) return;
+      const sh=shifts[k]; if (!isPaid(sh)) return;
       const ag=agencies.find(a=>a.id===aid); if (!ag) return;
       hours+=shiftHours(sh); pay+=shiftPay(sh,ag.rate);
     });
@@ -1366,7 +1393,7 @@ const WeeklyView = ({agencies,shifts,setShifts,weekStartDay,accentColor,presets,
 
     Object.keys(shifts).forEach(k=>{
       const [date,aid]=k.split("_");
-      const sh=shifts[k]; if (!sh?.working) return;
+      const sh=shifts[k]; if (!isPaid(sh)) return;
       if (!result[aid]) return;
       // Include shift if its date falls in this calendar month
       if (date >= periodStart && date <= periodEnd) {
@@ -1730,7 +1757,7 @@ const BothOffCal = ({year,month,myShifts,setMyShifts,partnerShifts,setPartnerShi
                       s.note?.trim()&&React.createElement("div",{style:{fontSize:11,color:TEXT3,fontFamily:"'DM Sans',sans-serif",marginTop:2}},"📝 "+s.note.trim())
                     )
                   : React.createElement("div",{style:{fontSize:11,color:TEXT3,fontFamily:"'DM Sans',sans-serif"}},
-                      s.isHoliday?"🏖️ Holiday"+(s.note?" — "+s.note:""):"🌙 Rest day"+(s.note?" — "+s.note:"")
+                      s.isHoliday?"🏖️ Holiday"+(isPaidHoliday(s)?" (paid · "+fmtHours(holidayHours(s))+")":"")+(s.note?" — "+s.note:""):"🌙 Rest day"+(s.note?" — "+s.note:"")
                     )
               )
             )
@@ -1785,7 +1812,7 @@ const BothOffCal = ({year,month,myShifts,setMyShifts,partnerShifts,setPartnerShi
           React.createElement("span",{style:{color,fontWeight:700}},name+": "),
           React.createElement("span",{style:{color:TEXT2}},
             s.working?`${s.startTime||"?"}–${s.endTime||"?"} · ${shiftHours(s).toFixed(1)}h${s.hasSleepover?" · 🌙":""}`:
-            s.isHoliday?"🏖️ Holiday":"🌙 Rest day"
+            s.isHoliday?"🏖️ Holiday"+(isPaidHoliday(s)?" (paid · "+fmtHours(holidayHours(s))+")":""):"🌙 Rest day"
           )
         )
       );
@@ -2015,7 +2042,7 @@ const PaymentTracker = ({myAgencies,myShifts,partnerAgencies,partnerShifts,myPay
         Object.keys(shifts).forEach(k => {
           const [date, aid] = k.split("_");
           if (aid !== ag.id) return;
-          if (!shifts[k]?.working) return;
+          if (!isPaid(shifts[k])) return;
           weekKeys.add(getWeekStartStr(date));
         });
 
@@ -2037,7 +2064,7 @@ const PaymentTracker = ({myAgencies,myShifts,partnerAgencies,partnerShifts,myPay
             d.setDate(d.getDate()+i);
             const ds = d.toISOString().slice(0,10);
             const sh = shifts[`${ds}_${ag.id}`];
-            if (sh?.working) { hours+=shiftHours(sh); gross+=shiftPay(sh, ag.rate); }
+            if (isPaid(sh)) { hours+=shiftHours(sh); gross+=shiftPay(sh, ag.rate); }
           }
           if (hours === 0) return;
 
@@ -2065,7 +2092,7 @@ const PaymentTracker = ({myAgencies,myShifts,partnerAgencies,partnerShifts,myPay
         Object.keys(shifts).forEach(k => {
           const [date, aid] = k.split("_");
           if (aid !== ag.id) return;
-          if (!shifts[k]?.working) return;
+          if (!isPaid(shifts[k])) return;
           // Which period does this date fall in?
           const [dy, dm, dd] = date.split("-").map(Number);
           // If day >= startDay, period started this month
@@ -2097,7 +2124,7 @@ const PaymentTracker = ({myAgencies,myShifts,partnerAgencies,partnerShifts,myPay
             const [date, aid] = k2.split("_");
             if (aid !== ag.id) return;
             if (date < periodStart || date > periodEnd) return;
-            if (!shifts[k2]?.working) return;
+            if (!isPaid(shifts[k2])) return;
             hours+=shiftHours(shifts[k2]); gross+=shiftPay(shifts[k2], ag.rate);
           });
           if (hours === 0) return;
@@ -2159,7 +2186,7 @@ const PaymentTracker = ({myAgencies,myShifts,partnerAgencies,partnerShifts,myPay
     });
     Object.keys(shifts).forEach(k=>{
       const [date,aid]=k.split("_");
-      const sh=shifts[k]; if (!sh?.working) return;
+      const sh=shifts[k]; if (!isPaid(sh)) return;
       if (!result[aid]) return;
       if (date >= periodStart && date <= periodEnd) {
         const ag=agencies.find(a=>a.id===aid);
@@ -2885,7 +2912,7 @@ const PartnerComparison = ({myAgencies,myShifts,partnerAgencies,partnerShifts,my
     weekDates.forEach(d=>{
       agencies.forEach(ag=>{
         const s=shifts[`${d}_${ag.id}`];
-        if (s?.working) {
+        if (isPaid(s)) {
           hours += shiftHours(s);
           const g = shiftPay(s, ag.rate);
           agGross[ag.id] = (agGross[ag.id]||0) + g;
@@ -3016,7 +3043,7 @@ const PayslipChecker = ({myAgencies,myShifts,partnerAgencies,partnerShifts,prefs
     Object.keys(shifts).forEach(k=>{
       const [date,aid]=k.split("_");
       if (date<periodStart||date>periodEnd) return;
-      const s=shifts[k]; if (!s?.working) return;
+      const s=shifts[k]; if (!isPaid(s)) return;
       const ag=agencies.find(a=>a.id===aid); if (!ag) return;
       calcHours+=shiftHours(s); calcPay+=shiftPay(s,ag.rate);
       calcDays++; if(s.hasSleepover) calcSleepovers++;
@@ -3316,7 +3343,7 @@ const ReportsView = ({myAgencies,myShifts,setMyShifts,partnerAgencies,partnerShi
   const calcPeriod = (keys,ags,sh)=>{
     const r=ags.map(ag=>({...ag,hours:0,pay:0,sleepovers:0,days:0}));
     keys.forEach(k=>{
-      const [,aid]=k.split("_"); const s=sh[k]; if (!s?.working) return;
+      const [,aid]=k.split("_"); const s=sh[k]; if (!isPaid(s)) return;
       const ag=r.find(a=>a.id===aid); if (!ag) return;
       ag.hours+=shiftHours(s); ag.pay+=shiftPay(s,ag.rate);
       if(s.hasSleepover) ag.sleepovers++;
@@ -3334,7 +3361,7 @@ const ReportsView = ({myAgencies,myShifts,setMyShifts,partnerAgencies,partnerShi
     if (mode!=="yearly") return [];
     const mm={};
     filtered.forEach(k=>{
-      const [date,aid]=k.split("_"); const sh=shifts[k]; if (!sh?.working) return;
+      const [date,aid]=k.split("_"); const sh=shifts[k]; if (!isPaid(sh)) return;
       const m=date.slice(0,7);
       if (!mm[m]) mm[m]={hours:0,pay:0,days:0};
       const ag=agencies.find(a=>a.id===aid); if (!ag) return;
@@ -3444,7 +3471,7 @@ const ReportsView = ({myAgencies,myShifts,setMyShifts,partnerAgencies,partnerShi
               let lines=[`📋 Shifto Summary — ${name}`,`${MONTHS[month]} ${year}`,``];
               agencies.forEach(ag=>{
                 const agShifts=Object.entries(shifts).filter(([k])=>{const[d,aid]=k.split("_");const dt=new Date(d+"T00:00:00");return aid===ag.id&&dt.getFullYear()===year&&dt.getMonth()===month;});
-                const worked=agShifts.filter(([,s])=>s?.working);
+                const worked=agShifts.filter(([,s])=>isPaid(s));
                 const hours=worked.reduce((s,[,sh])=>s+shiftHours(sh),0);
                 const gross=worked.reduce((s,[,sh])=>s+shiftPay(sh,ag.rate),0);
                 const agPd=(pd||[]).find(p=>p.agencyId===ag.id)||{};
@@ -3871,7 +3898,7 @@ const NetPayView = ({who, agencies, shifts, payDetails, prefs, T, year, month, m
       const d = new Date(date + "T00:00:00");
       return d.getFullYear() === year && d.getMonth() === month;
     });
-    const gross = agShifts.reduce((s, [, sh]) => sh?.working ? s + shiftPay(sh, ag.rate) : s, 0);
+    const gross = agShifts.reduce((s, [, sh]) => isPaid(sh) ? s + shiftPay(sh, ag.rate) : s, 0);
     return { ag, gross, pd, periodLabel, startDay };
   }).filter(x => x.gross > 0);
 
@@ -3996,7 +4023,7 @@ const exportPDF = (year, month, who, agencies, shifts, payDetails, myName, partn
 
   // Total gross
   const agTotals = agencies.map(ag => {
-    const agRows = rows.filter(r => r.ag.id === ag.id && r.sh.working);
+    const agRows = rows.filter(r => r.ag.id === ag.id && isPaid(r.sh));
     const gross = agRows.reduce((s, r) => s + shiftPay(r.sh, ag.rate), 0);
     const hours = agRows.reduce((s, r) => s + shiftHours(r.sh), 0);
     const pd = details.find(d => d.agencyId === ag.id) || {};
@@ -4052,11 +4079,11 @@ const exportPDF = (year, month, who, agencies, shifts, payDetails, myName, partn
     ${rows.map(({ dayLabel, ag, sh }) => `
       <tr>
         <td>${dayLabel}</td>
-        <td><span class="tag ${sh.working ? "working" : "off"}">${sh.working ? "Working" : "Day Off"}</span></td>
+        <td><span class="tag ${sh.working ? "working" : "off"}">${sh.working ? "Working" : isPaidHoliday(sh) ? "Holiday (paid)" : sh.isHoliday ? "Holiday" : "Day Off"}</span></td>
         <td>${ag.name}</td>
-        <td>${sh.working ? fmtHours(shiftHours(sh)) : "–"}</td>
+        <td>${isPaid(sh) ? fmtHours(shiftHours(sh)) : "–"}</td>
         <td>${sh.working ? (sh.startTime || "") + (sh.endTime ? " – " + sh.endTime : "") : ""}${sh.hasSleepover ? ' <span class="tag sleepover">💤 Sleepover</span>' : ""}${sh.note ? '<br><em style="color:#777;font-size:9pt;">' + sh.note + "</em>" : ""}</td>
-        <td class="amt">${sh.working ? fmtGBP(shiftPay(sh, ag.rate)) : "–"}</td>
+        <td class="amt">${isPaid(sh) ? fmtGBP(shiftPay(sh, ag.rate)) : "–"}</td>
       </tr>`).join("")}
     ${agTotals.map(({ ag, gross, hours, days, netSection }) => `
       <tr class="gross-row">
@@ -4469,10 +4496,10 @@ const SettingsView = ({myAgencies,setMyAgencies,partnerAgencies,setPartnerAgenci
       if (!s) return;
       const ag=agMap[aid]; if (!ag) return;
       const d=new Date(date+"T00:00:00");
-      const gross=s.working?shiftPay(s,ag.rate):0;
+      const gross=isPaid(s)?shiftPay(s,ag.rate):0;
       const pd=(isMe?(prefs.myPayDetails||[]):(prefs.partnerPayDetails||[])).find(x=>x.agencyId===aid)||{};
       let tax="",ni="",pen="",net="";
-      if (s.working&&gross>0&&pd.taxCode) {
+      if (isPaid(s)&&gross>0&&pd.taxCode) {
         // Per-shift export: apply per-period thresholds to this shift's actual gross
         const freq=pd.frequency||"Monthly";
         const result=calcUKNetPayFromPeriodGross(gross,pd.taxCode,pd.niCategory||"A – Standard",pd.studentLoan||"None",pd.pension||0,parseFloat(pd.otherDeductions)||0,pd.taxYear,freq);
@@ -4488,7 +4515,7 @@ const SettingsView = ({myAgencies,setMyAgencies,partnerAgencies,setPartnerAgenci
         ag.name,
         s.working?"Yes":"No",
         s.startTime||"",s.endTime||"",
-        s.working?shiftHours(s).toFixed(2):"",
+        isPaid(s)?shiftHours(s).toFixed(2):"",
         s.working?gross.toFixed(2):"",
         tax,ni,pen,net,
         s.hasSleepover?"Yes":"No",

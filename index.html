@@ -863,8 +863,8 @@ const SummaryTile = ({weekStats,totalHours,totalPay,monthPay,monthHours,weekKey,
           }},
             // Header row: title + Edit button
             React.createElement("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}},
-              React.createElement("span",{style:{fontSize:11,fontWeight:800,color:NW,textTransform:"uppercase",letterSpacing:"0.06em",fontFamily:"'DM Sans',sans-serif"}},"Monthly Goal — ",
-                React.createElement("span",{style:{color:NG}},(monthPeriodLabel||"").toUpperCase())
+              React.createElement("div",{style:{fontSize:11,fontWeight:800,color:NW,textTransform:"uppercase",letterSpacing:"0.06em",fontFamily:"'DM Sans',sans-serif"}},
+                "MONTHLY GOAL — "+(monthPeriodLabel||"").toUpperCase()
               ),
               React.createElement("button",{
                 onClick:()=>{setDraftGoal(goalAmt.toString());setEditingGoal(true);},
@@ -901,9 +901,7 @@ const SummaryTile = ({weekStats,totalHours,totalPay,monthPay,monthHours,weekKey,
               // Middle: amount row + progress bar
               React.createElement("div",{style:{flex:1,minWidth:0}},
                 React.createElement("div",{style:{fontSize:"clamp(13px,3.8vw,16px)",fontWeight:700,color:NW,fontFamily:"'DM Mono',monospace",fontVariantNumeric:"tabular-nums",letterSpacing:"-0.01em",marginBottom:6}},
-                  fmtGBP(finalMonth)," ",
-                  React.createElement("span",{style:{color:"rgba(255,255,255,0.45)",fontWeight:400}},"/")," ",
-                  React.createElement("span",{style:{color:"rgba(255,255,255,0.65)"}},(fmtGBP(goalAmt)))
+                  fmtGBP(finalMonth)+" / "+fmtGBP(goalAmt)
                 ),
                 React.createElement("div",{style:{height:8,borderRadius:4,background:"rgba(120,140,180,0.3)",overflow:"hidden"}},
                   React.createElement("div",{style:{height:"100%",width:goalPct+"%",borderRadius:4,background:NG,transition:"width 0.7s ease"}})
@@ -2626,7 +2624,7 @@ const MonthlyGoalCard = ({allRows, person, prefs, setPrefs, agencyMonthStats, pa
       // Header: title + Edit button
       React.createElement("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}},
         React.createElement("div",{style:{fontSize:11,fontWeight:800,color:NW,textTransform:"uppercase",letterSpacing:"0.06em",fontFamily:"'DM Sans',sans-serif"}},
-          "MONTHLY GOAL — ",React.createElement("span",{style:{color:NG}},monthLabel.toUpperCase())
+          "MONTHLY GOAL — "+monthLabel.toUpperCase()
         ),
         React.createElement("button",{
           onClick:()=>setEditGoal(s=>!s),

@@ -2583,8 +2583,25 @@ const MonthlyGoalCard = ({allRows, person, prefs, setPrefs, agencyMonthStats, pa
     prevRewards.current = rewards;
   },[rewards]);
 
+  const NG = "#c9a843"; // gold
+  const NW = "#ffffff";
+  const NL = "rgba(255,255,255,0.65)";
+
+  // Jar SVG — outlined, gold fill proportional to progress
+  const jarFill = goal > 0 ? Math.min(1, jarPct/100) : 0;
+  const jarIcon = React.createElement("svg",{width:38,height:50,viewBox:"0 0 38 50",fill:"none"},
+    // jar body
+    React.createElement("rect",{x:5,y:12,width:28,height:33,rx:5,fill:`rgba(201,168,67,${0.1+jarFill*0.5})`,stroke:NG,strokeWidth:2}),
+    // fill level
+    jarFill>0&&React.createElement("rect",{x:7,y:12+33*(1-jarFill),width:24,height:33*jarFill,rx:jarFill>=1?4:0,fill:NG,opacity:0.85}),
+    // lid
+    React.createElement("rect",{x:3,y:6,width:32,height:8,rx:3,fill:NG}),
+    // shine line
+    React.createElement("line",{x1:12,y1:18,x2:12,y2:40,stroke:"rgba(255,255,255,0.3)",strokeWidth:2.5,strokeLinecap:"round"})
+  );
+
   return React.createElement("div",{style:{position:"relative",marginBottom:12}},
-    confetti.length>0&&React.createElement("div",{style:{position:"absolute",inset:0,pointerEvents:"none",overflow:"hidden",zIndex:20,borderRadius:12}},
+    confetti.length>0&&React.createElement("div",{style:{position:"absolute",inset:0,pointerEvents:"none",overflow:"hidden",zIndex:20,borderRadius:16}},
       confetti.map(p=>React.createElement("div",{key:p.id,style:{
         position:"absolute",top:0,left:p.left+"%",
         width:p.size,height:p.size,borderRadius:p.id%3===0?"50%":2,
@@ -2592,67 +2609,68 @@ const MonthlyGoalCard = ({allRows, person, prefs, setPrefs, agencyMonthStats, pa
         animation:`confettiFall ${p.dur}s ${p.delay}s ease-in forwards`
       }}))
     ),
-    React.createElement("div",{style:{background:bg2,borderRadius:12,padding:"14px",border:`1px solid ${bdr}`}},
-      React.createElement("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}},
-        React.createElement("div",{style:{fontSize:10,fontWeight:700,color:txt3,textTransform:"uppercase",letterSpacing:"0.07em",fontFamily:"'DM Sans',sans-serif"}},"🎯 Monthly goal — "+monthLabel),
+    // Navy card
+    React.createElement("div",{style:{
+      background:"linear-gradient(135deg,#1e2c4d 0%,#1a2744 55%,#22335a 100%)",
+      borderRadius:16,padding:"14px 14px 12px",
+      border:"1px solid rgba(255,255,255,0.10)",
+      boxShadow:"0 4px 14px rgba(26,39,68,0.28)"
+    }},
+      // Header: title + Edit button
+      React.createElement("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}},
+        React.createElement("span",{style:{fontSize:11,fontWeight:800,color:NW,textTransform:"uppercase",letterSpacing:"0.06em",fontFamily:"'DM Sans',sans-serif"}},
+          "Monthly Goal ",
+          React.createElement("span",{style:{color:NG}},"— "+monthLabel.toUpperCase())
+        ),
         React.createElement("button",{
           onClick:()=>setEditGoal(s=>!s),
-          style:{fontSize:11,padding:"3px 10px",borderRadius:20,border:`1px solid ${bdr}`,background:"transparent",color:txt3,fontFamily:"'DM Sans',sans-serif",cursor:"pointer"}
+          style:{background:NG,color:"#1a2744",border:"none",borderRadius:999,padding:"5px 14px",fontSize:12,fontWeight:800,fontFamily:"'DM Sans',sans-serif",cursor:"pointer"}
         }, editGoal ? "Cancel" : (goal>0?"Edit":"Set goal"))
       ),
+      // Edit form
       editGoal&&React.createElement("div",{style:{marginBottom:12,display:"flex",flexDirection:"column",gap:8}},
-        React.createElement("div",{style:{fontSize:11,color:txt3,fontFamily:"'DM Sans',sans-serif"}},"Monthly target — earn rewards when you exceed this:"),
+        React.createElement("div",{style:{fontSize:11,color:NL,fontFamily:"'DM Sans',sans-serif"}},"Monthly target:"),
         React.createElement("input",{type:"number",value:goalInput,onChange:e=>setGoalInput(e.target.value),placeholder:"e.g. 2000",
-          style:{background:bg3,border:`1px solid ${bdr}`,borderRadius:8,padding:"8px 10px",color:txt,fontFamily:"'DM Mono',monospace",fontSize:16,width:"100%",boxSizing:"border-box",colorScheme:T.isDark?"dark":"light"}}),
-        React.createElement("div",{style:{fontSize:11,color:txt3,fontFamily:"'DM Sans',sans-serif"}},"Reward for every £100 earned above milestone:"),
+          style:{background:"rgba(255,255,255,0.08)",border:`1px solid ${NG}66`,borderRadius:8,padding:"8px 10px",color:NW,fontFamily:"'DM Mono',monospace",fontSize:16,width:"100%",boxSizing:"border-box",outline:"none"}}),
+        React.createElement("div",{style:{fontSize:11,color:NL,fontFamily:"'DM Sans',sans-serif"}},"Reward per £100 above goal:"),
         React.createElement("input",{type:"number",value:rewardInput,onChange:e=>setRewardInput(e.target.value),placeholder:"e.g. 10",
-          style:{background:bg3,border:`1px solid ${bdr}`,borderRadius:8,padding:"8px 10px",color:txt,fontFamily:"'DM Mono',monospace",fontSize:16,width:"100%",boxSizing:"border-box",colorScheme:T.isDark?"dark":"light"}}),
+          style:{background:"rgba(255,255,255,0.08)",border:`1px solid ${NG}66`,borderRadius:8,padding:"8px 10px",color:NW,fontFamily:"'DM Mono',monospace",fontSize:16,width:"100%",boxSizing:"border-box",outline:"none"}}),
         React.createElement("button",{onClick:saveGoal,
-          style:{padding:"9px",borderRadius:9,border:"none",background:GREEN_C,color:"#fff",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:13,cursor:"pointer"}},
+          style:{padding:"9px",borderRadius:9,border:"none",background:NG,color:"#1a2744",fontFamily:"'DM Sans',sans-serif",fontWeight:800,fontSize:13,cursor:"pointer"}},
           "Save")
       ),
-      goal<=0&&!editGoal&&React.createElement("div",{style:{textAlign:"center",color:txt3,fontFamily:"'DM Sans',sans-serif",fontSize:12,padding:"8px 0"}},
-        "Set a milestone to start earning rewards 🎮"),
+      // No goal set
+      goal<=0&&!editGoal&&React.createElement("div",{style:{textAlign:"center",color:NL,fontFamily:"'DM Sans',sans-serif",fontSize:12,padding:"8px 0"}},
+        "Tap Set goal to start tracking 🎯"),
+      // Goal content
       goal>0&&!editGoal&&React.createElement("div",null,
-        React.createElement("div",{style:{display:"flex",alignItems:"flex-end",gap:12,marginBottom:12}},
-          React.createElement("div",{style:{flexShrink:0,position:"relative",width:36,height:52}},
-            React.createElement("div",{style:{
-              position:"absolute",bottom:0,left:0,right:0,height:44,
-              borderRadius:"0 0 10px 10px",border:`2px solid ${GOALC}99`,
-              overflow:"hidden",background:bg3
-            }},
-              React.createElement("div",{style:{
-                position:"absolute",bottom:0,left:0,right:0,
-                height:jarPct+"%",
-                background:jarPct>=100?`linear-gradient(180deg,${GOALC},${GOALC}dd)`:`linear-gradient(180deg,${GOALC}88,${GOALC}55)`,
-                transition:"height 0.8s ease",
-                borderRadius:"0 0 8px 8px"
-              }})
+        // Body row: jar + amount/bar + pct
+        React.createElement("div",{style:{display:"flex",alignItems:"center",gap:14,marginBottom:10}},
+          jarIcon,
+          React.createElement("div",{style:{flex:1,minWidth:0}},
+            React.createElement("div",{style:{fontSize:16,fontWeight:700,color:NW,fontFamily:"'DM Mono',monospace",fontVariantNumeric:"tabular-nums",letterSpacing:"-0.01em",marginBottom:7}},
+              fmtGBP(monthEarned),
+              React.createElement("span",{style:{color:"rgba(255,255,255,0.4)",fontWeight:400}}," / "),
+              React.createElement("span",{style:{color:"rgba(255,255,255,0.65)",fontSize:14}},fmtGBP(goal))
             ),
-            React.createElement("div",{style:{
-              position:"absolute",top:0,left:4,right:4,height:10,
-              border:`2px solid ${GOALC}99`,borderRadius:"4px 4px 0 0",background:bg3
-            }})
-          ),
-          React.createElement("div",{style:{flex:1}},
-            React.createElement("div",{style:{display:"flex",justifyContent:"space-between",marginBottom:4}},
-              React.createElement("div",{style:{fontSize:11,color:txt3,fontFamily:"'DM Sans',sans-serif"}},fmtGBP(monthEarned)+" / "+fmtGBP(goal)),
-              React.createElement("div",{style:{fontSize:11,fontWeight:700,color:pct>=100?GREEN_C:txt2,fontFamily:"'DM Sans',sans-serif"}},Math.round(pct)+"%")
-            ),
-            React.createElement("div",{style:{height:8,background:bg3,borderRadius:4,overflow:"hidden"}},
-              React.createElement("div",{style:{height:"100%",width:pct+"%",background:pct>=100?GOALC:`linear-gradient(90deg,${GOALC}88,${GOALC})`,borderRadius:4,transition:"width 0.5s"}})
+            React.createElement("div",{style:{height:9,borderRadius:5,background:"rgba(120,140,180,0.3)",overflow:"hidden"}},
+              React.createElement("div",{style:{height:"100%",width:Math.round(pct)+"%",borderRadius:5,background:NG,transition:"width 0.7s ease"}})
             )
+          ),
+          React.createElement("div",{style:{fontSize:22,fontWeight:800,color:NW,fontFamily:"'DM Mono',monospace",fontVariantNumeric:"tabular-nums",flexShrink:0}},
+            Math.round(pct)+"%"
           )
         ),
-        rewards>0&&React.createElement("div",{style:{background:`${GOALC}14`,border:`1px solid ${GOALC}44`,borderRadius:10,padding:"10px 12px",marginBottom:8}},
-          React.createElement("div",{style:{fontSize:20,textAlign:"center",marginBottom:4}},"🎉"),
-          React.createElement("div",{style:{fontSize:14,fontWeight:800,color:GREEN_C,textAlign:"center",fontFamily:"'DM Sans',sans-serif"}},"You've earned "+rewards+" reward"+(rewards!==1?"s":"")+"!"),
-          React.createElement("div",{style:{fontSize:13,color:txt2,textAlign:"center",fontFamily:"'DM Mono',monospace",marginTop:2}},fmtGBP(rewardAmt)+" to treat yourself 🎁")
+        // Reward banner
+        rewards>0&&React.createElement("div",{style:{background:`${NG}18`,border:`1px solid ${NG}44`,borderRadius:10,padding:"8px 12px",marginBottom:8,textAlign:"center"}},
+          React.createElement("div",{style:{fontSize:13,fontWeight:800,color:NG,fontFamily:"'DM Sans',sans-serif"}},"🎉 "+rewards+" reward"+(rewards!==1?"s":"")+" earned — "+fmtGBP(rewardAmt)+" to treat yourself!")
         ),
-        rewards===0&&pct<100&&goal>0&&React.createElement("div",{style:{fontSize:11,color:txt3,fontFamily:"'DM Sans',sans-serif",textAlign:"center"}},
-          "£"+toNext.toFixed(0)+" to reach your goal this month"),
-        rewards>0&&React.createElement("div",{style:{fontSize:11,color:txt3,fontFamily:"'DM Sans',sans-serif",textAlign:"center"}},
-          "£"+toNext.toFixed(0)+" net to next reward (+"+fmtGBP(reward)+")")
+        // Footer text
+        React.createElement("div",{style:{textAlign:"center",fontSize:11,color:NL,fontFamily:"'DM Sans',sans-serif",fontVariantNumeric:"tabular-nums"}},
+          pct>=100 ? "🎉 Goal reached!" :
+          rewards>0 ? "£"+toNext.toFixed(2)+" to next reward (+"+fmtGBP(reward)+")" :
+          "£"+toNext.toFixed(2)+" to reach your goal this month"
+        )
       )
     )
   );

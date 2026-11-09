@@ -2418,7 +2418,15 @@ const PaymentTracker = ({myAgencies,myShifts,partnerAgencies,partnerShifts,myPay
           "✕ Clear filter")
       )
     ),
-    React.createElement("div",{style:{flex:1,overflowY:"auto",padding:"12px 14px 24px",background:T.bg}},
+    // ── Monthly Goal — fixed below name buttons, outside scroll ─────────────
+    React.createElement("div",{style:{flexShrink:0,padding:"10px 14px 0"}},
+      React.createElement(MonthlyGoalCard,{
+        allRows, person, prefs, setPrefs,
+        agencyMonthStats, payDetails, agencies,
+        GREEN_C, bg2, bg3, bdr, txt, txt2, txt3, T
+      })
+    ),
+    React.createElement("div",{style:{flex:1,overflowY:"auto",padding:"12px 14px 24px",WebkitOverflowScrolling:"touch"}},
     // Confirm modal
     confirm&&React.createElement("div",{
       style:{position:"fixed",inset:0,zIndex:200,background:"#00000088",display:"flex",alignItems:"center",justifyContent:"center"},
@@ -2448,12 +2456,6 @@ const PaymentTracker = ({myAgencies,myShifts,partnerAgencies,partnerShifts,myPay
     ),
     rows.length===0&&React.createElement("div",{style:{textAlign:"center",color:txt3,fontFamily:"'DM Sans',sans-serif",fontSize:13,marginTop:40}},
       "No shifts logged yet. Log shifts to track your payments."),
-    // ── Monthly Goal — top of payment list ──────────────────────────────────
-    React.createElement(MonthlyGoalCard,{
-      allRows, person, prefs, setPrefs,
-      agencyMonthStats, payDetails, agencies,
-      GREEN_C, bg2, bg3, bdr, txt, txt2, txt3, T
-    }),
     // Grouped by workplace, then by year
     rowsByAgency.map(ag => {
       const isCollapsed = !!collapsedAg[ag.agId];

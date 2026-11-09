@@ -2055,6 +2055,7 @@ const PaymentTracker = ({myAgencies,myShifts,partnerAgencies,partnerShifts,myPay
   const [filterFrom, setFilterFrom] = useState("");
   const [filterTo,   setFilterTo]   = useState("");
   const [showFilter, setShowFilter] = useState(false);
+  const [showPaid,   setShowPaid]   = useState(false);
 
   const wsd = typeof prefs.weekStartDay === "number" ? prefs.weekStartDay : 1; // week start day (1=Mon default)
 
@@ -2261,15 +2262,15 @@ const PaymentTracker = ({myAgencies,myShifts,partnerAgencies,partnerShifts,myPay
     return result;
   },[agencies, shifts]);
 
-  // Apply date filter
+  // Apply date + paid filter
   const rows = useMemo(() => {
-    if (!filterFrom && !filterTo) return allRows;
     return allRows.filter(r => {
+      if (!showPaid && r.paid) return false;
       if (filterFrom && r.periodEnd < filterFrom) return false;
       if (filterTo   && r.periodStart > filterTo)  return false;
       return true;
     });
-  }, [allRows, filterFrom, filterTo]);
+  }, [allRows, filterFrom, filterTo, showPaid]);
 
   const togglePaid = (key, currentPaid) => {
     setConfirm({key, newPaid: !currentPaid});
@@ -2391,6 +2392,12 @@ const PaymentTracker = ({myAgencies,myShifts,partnerAgencies,partnerShifts,myPay
               border:`1px solid ${person===id?GREEN_C:bdr}`,
               color:person===id?GREEN_C:txt3,transition:"all 0.15s"}},label)
         ),
+        React.createElement("button",{onClick:()=>setShowPaid(s=>!s),
+          style:{padding:"8px 12px",borderRadius:9,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontSize:13,fontWeight:700,
+            background:showPaid?"#c9a84322":bg3,
+            border:`1px solid ${showPaid?GREEN_C:bdr}`,
+            color:showPaid?GREEN_C:txt3,flexShrink:0,transition:"all 0.15s",whiteSpace:"nowrap"}},
+          showPaid?"✓ Paid":"✓ Paid"),
         React.createElement("button",{"data-on":String(!!hasFilter),onClick:()=>setShowFilter(s=>!s),
           style:{padding:"8px 12px",borderRadius:9,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontSize:13,fontWeight:700,
             background:hasFilter?"#c9a84322":bg3,

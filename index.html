@@ -838,27 +838,90 @@ const SummaryTile = ({weekStats,totalHours,totalPay,monthPay,monthHours,weekKey,
             style:{flexShrink:0,transform:expanded?"rotate(180deg)":"rotate(0deg)",transition:"transform 0.25s"}},
             React.createElement("path",{d:"M6 9l6 6 6-6"}))
         ),
-        // Monthly goal panel
-        goalAmt > 0 && React.createElement("div",{style:{
-          position:"relative",margin:"0 8px 8px",padding:"9px 10px 9px",borderRadius:12,
-          background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.12)"
-        }},
-          React.createElement("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,marginBottom:9}},
-            React.createElement("div",{style:{display:"flex",alignItems:"center",gap:8}},
-              iTarget,
-              React.createElement("span",{style:{fontSize:13,fontWeight:700,color:NW,textTransform:"uppercase",letterSpacing:"0.01em",fontFamily:"'DM Sans',sans-serif"}},"Monthly goal")
+        // Monthly goal panel — matches reference design
+        goalAmt > 0 && (()=>{
+          const [editingGoal,setEditingGoal] = React.useState(false);
+          const [draftGoal,setDraftGoal] = React.useState("");
+          const monthTitle = "MONTHLY GOAL — "+(monthPeriodLabel||"").toUpperCase();
+          const remaining = goalAmt - finalMonth;
+          const jarFill = Math.min(1, goalPct/100);
+          // Jar SVG: outlined jar, gold fill proportional to progress
+          const jarH = 28, jarW = 22;
+          const jarIcon = React.createElement("svg",{width:jarW,height:jarH,viewBox:"0 0 22 28",fill:"none"},
+            // jar body outline
+            React.createElement("rect",{x:3,y:7,width:16,height:17,rx:3,fill:`rgba(240,189,72,${0.15+jarFill*0.6})`,stroke:NG,strokeWidth:1.5}),
+            // fill level (clipped inside jar)
+            React.createElement("rect",{x:4,y:7+17*(1-jarFill),width:14,height:17*jarFill,rx:jarFill>=1?3:0,fill:NG,opacity:0.9}),
+            // lid
+            React.createElement("rect",{x:2,y:4,width:18,height:4.5,rx:2,fill:NG}),
+            // shine
+            React.createElement("line",{x1:7,y1:11,x2:7,y2:21,stroke:"rgba(255,255,255,0.35)",strokeWidth:1.5,strokeLinecap:"round"})
+          );
+          return React.createElement("div",{style:{
+            position:"relative",margin:"0 8px 8px",padding:"12px 12px 10px",borderRadius:12,
+            background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.12)"
+          }},
+            // Header row: title + Edit button
+            React.createElement("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}},
+              React.createElement("span",{style:{fontSize:11,fontWeight:800,color:NW,textTransform:"uppercase",letterSpacing:"0.06em",fontFamily:"'DM Sans',sans-serif"}},"Monthly Goal — ",
+                React.createElement("span",{style:{color:NG}},(monthPeriodLabel||"").toUpperCase())
+              ),
+              React.createElement("button",{
+                onClick:()=>{setDraftGoal(goalAmt.toString());setEditingGoal(true);},
+                style:{background:NG,color:"#1a2744",border:"none",borderRadius:999,padding:"4px 13px",fontSize:12,fontWeight:800,fontFamily:"'DM Sans',sans-serif",cursor:"pointer"}
+              },"Edit")
             ),
-            React.createElement("div",{style:{background:NG,color:"#1a2744",borderRadius:999,padding:"5px 12px",fontSize:12,fontWeight:800,fontFamily:"'DM Sans',sans-serif",whiteSpace:"nowrap",fontVariantNumeric:"tabular-nums"}},
-              goalPct<100 ? "£"+(goalAmt-finalMonth).toFixed(0)+" to go "+goalPct+"%" : "Goal reached 🎉 "+goalPct+"%")
-          ),
-          React.createElement("div",{style:{height:10,borderRadius:6,background:"rgba(120,140,180,0.35)",overflow:"hidden"}},
-            React.createElement("div",{style:{height:"100%",width:goalPct+"%",borderRadius:6,background:NG,transition:"width 0.6s ease"}})
-          ),
-          React.createElement("div",{style:{display:"flex",justifyContent:"space-between",marginTop:7}},
-            React.createElement("span",{style:{fontSize:11,color:NW,fontFamily:"'DM Sans',sans-serif",fontVariantNumeric:"tabular-nums"}},fmtGBP(finalMonth)+" earned"),
-            React.createElement("span",{style:{fontSize:11,color:NW,fontFamily:"'DM Sans',sans-serif",fontVariantNumeric:"tabular-nums"}},"goal "+fmtGBP(goalAmt))
-          )
-        )
+            // Edit inline input
+            editingGoal&&React.createElement("div",{style:{display:"flex",gap:6,marginBottom:10}},
+              React.createElement("input",{
+                type:"number",inputMode:"decimal",autoFocus:true,
+                value:draftGoal,onChange:e=>setDraftGoal(e.target.value),
+                style:{flex:1,padding:"7px 10px",borderRadius:8,border:`1px solid ${NG}`,background:"rgba(255,255,255,0.08)",color:NW,fontSize:14,fontFamily:"'DM Mono',monospace",outline:"none"}
+              }),
+              React.createElement("button",{
+                onClick:()=>{
+                  const v=parseFloat(draftGoal);
+                  if(!isNaN(v)&&v>0){
+                    const key=isPartnerView?"partnerEarningsGoal":"myEarningsGoal";
+                    setPrefs(p=>({...p,[key]:v}));
+                  }
+                  setEditingGoal(false);
+                },
+                style:{padding:"7px 14px",borderRadius:8,background:NG,border:"none",color:"#1a2744",fontWeight:800,fontSize:13,fontFamily:"'DM Sans',sans-serif",cursor:"pointer"}
+              },"Save"),
+              React.createElement("button",{
+                onClick:()=>setEditingGoal(false),
+                style:{padding:"7px 10px",borderRadius:8,background:"transparent",border:"1px solid rgba(255,255,255,0.2)",color:NW,fontSize:13,cursor:"pointer"}
+              },"✕")
+            ),
+            // Body row: jar + amount/bar + percentage
+            React.createElement("div",{style:{display:"flex",alignItems:"center",gap:12}},
+              // Jar icon
+              jarIcon,
+              // Middle: amount row + progress bar
+              React.createElement("div",{style:{flex:1,minWidth:0}},
+                React.createElement("div",{style:{fontSize:"clamp(13px,3.8vw,16px)",fontWeight:700,color:NW,fontFamily:"'DM Mono',monospace",fontVariantNumeric:"tabular-nums",letterSpacing:"-0.01em",marginBottom:6}},
+                  fmtGBP(finalMonth)," ",
+                  React.createElement("span",{style:{color:"rgba(255,255,255,0.45)",fontWeight:400}},"/")," ",
+                  React.createElement("span",{style:{color:"rgba(255,255,255,0.65)"}},(fmtGBP(goalAmt)))
+                ),
+                React.createElement("div",{style:{height:8,borderRadius:4,background:"rgba(120,140,180,0.3)",overflow:"hidden"}},
+                  React.createElement("div",{style:{height:"100%",width:goalPct+"%",borderRadius:4,background:NG,transition:"width 0.7s ease"}})
+                )
+              ),
+              // Percentage
+              React.createElement("div",{style:{fontSize:"clamp(18px,5vw,22px)",fontWeight:800,color:NW,fontFamily:"'DM Mono',monospace",fontVariantNumeric:"tabular-nums",flexShrink:0}},
+                goalPct+"%"
+              )
+            ),
+            // Footer: to reach message
+            React.createElement("div",{style:{textAlign:"center",marginTop:9,fontSize:11,color:"rgba(255,255,255,0.6)",fontFamily:"'DM Sans',sans-serif",fontVariantNumeric:"tabular-nums"}},
+              goalPct>=100
+                ? "🎉 Goal reached!"
+                : "£"+remaining.toFixed(2).replace(/^£/,"")+" to reach your goal this month"
+            )
+          );
+        })()
       );
     })(),
 

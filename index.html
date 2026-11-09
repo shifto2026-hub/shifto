@@ -2418,14 +2418,6 @@ const PaymentTracker = ({myAgencies,myShifts,partnerAgencies,partnerShifts,myPay
           "✕ Clear filter")
       )
     ),
-    // ── Monthly Goal — fixed below name buttons, outside scroll ─────────────
-    React.createElement("div",{style:{flexShrink:0,padding:"10px 14px 0"}},
-      React.createElement(MonthlyGoalCard,{
-        allRows, person, prefs, setPrefs,
-        agencyMonthStats, payDetails, agencies,
-        GREEN_C, bg2, bg3, bdr, txt, txt2, txt3, T
-      })
-    ),
     React.createElement("div",{style:{flex:1,overflowY:"auto",padding:"12px 14px 24px",WebkitOverflowScrolling:"touch"}},
     // Confirm modal
     confirm&&React.createElement("div",{

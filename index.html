@@ -789,6 +789,7 @@ const SummaryTile = ({weekStats,totalHours,totalPay,monthPay,monthHours,weekKey,
 
   return React.createElement("div",{style:{
     borderTop:"4px solid #c9a843",
+    borderBottom:"4px solid #c9a843",
     background:STbg2,flexShrink:0,
     paddingBottom:"calc(env(safe-area-inset-bottom, 0px) + 6px)"
   }},
@@ -2432,6 +2433,8 @@ const PaymentTracker = ({myAgencies,myShifts,partnerAgencies,partnerShifts,myPay
 
 // ─── Monthly Goal Card (shown at top of payment list) ─────────────────────────
 const MonthlyGoalCard = ({allRows, person, prefs, setPrefs, agencyMonthStats, payDetails, agencies, GREEN_C, bg2, bg3, bdr, txt, txt2, txt3, T}) => {
+  // Light theme: jar + progress bar in navy; dark theme keeps the green
+  const GOALC = (prefs.theme||"dark")==="dark" ? "#3ecf6e" : "#1a2744";
   const pfx = person==="me" ? "my" : "partner";
 
   const thisMonth = new Date().toISOString().slice(0,7);
@@ -2542,20 +2545,20 @@ const MonthlyGoalCard = ({allRows, person, prefs, setPrefs, agencyMonthStats, pa
           React.createElement("div",{style:{flexShrink:0,position:"relative",width:36,height:52}},
             React.createElement("div",{style:{
               position:"absolute",bottom:0,left:0,right:0,height:44,
-              borderRadius:"0 0 10px 10px",border:`2px solid ${GREEN_C}99`,
+              borderRadius:"0 0 10px 10px",border:`2px solid ${GOALC}99`,
               overflow:"hidden",background:bg3
             }},
               React.createElement("div",{style:{
                 position:"absolute",bottom:0,left:0,right:0,
                 height:jarPct+"%",
-                background:jarPct>=100?"linear-gradient(180deg,#3ecf6e,#22c55e)":"linear-gradient(180deg,#3ecf6e88,#3ecf6e55)",
+                background:jarPct>=100?`linear-gradient(180deg,${GOALC},${GOALC}dd)`:`linear-gradient(180deg,${GOALC}88,${GOALC}55)`,
                 transition:"height 0.8s ease",
                 borderRadius:"0 0 8px 8px"
               }})
             ),
             React.createElement("div",{style:{
               position:"absolute",top:0,left:4,right:4,height:10,
-              border:`2px solid ${GREEN_C}99`,borderRadius:"4px 4px 0 0",background:bg3
+              border:`2px solid ${GOALC}99`,borderRadius:"4px 4px 0 0",background:bg3
             }})
           ),
           React.createElement("div",{style:{flex:1}},
@@ -2564,11 +2567,11 @@ const MonthlyGoalCard = ({allRows, person, prefs, setPrefs, agencyMonthStats, pa
               React.createElement("div",{style:{fontSize:11,fontWeight:700,color:pct>=100?GREEN_C:txt2,fontFamily:"'DM Sans',sans-serif"}},Math.round(pct)+"%")
             ),
             React.createElement("div",{style:{height:8,background:bg3,borderRadius:4,overflow:"hidden"}},
-              React.createElement("div",{style:{height:"100%",width:pct+"%",background:pct>=100?"#3ecf6e":"linear-gradient(90deg,#3ecf6e88,#3ecf6e)",borderRadius:4,transition:"width 0.5s"}})
+              React.createElement("div",{style:{height:"100%",width:pct+"%",background:pct>=100?GOALC:`linear-gradient(90deg,${GOALC}88,${GOALC})`,borderRadius:4,transition:"width 0.5s"}})
             )
           )
         ),
-        rewards>0&&React.createElement("div",{style:{background:"#3ecf6e14",border:"1px solid #3ecf6e44",borderRadius:10,padding:"10px 12px",marginBottom:8}},
+        rewards>0&&React.createElement("div",{style:{background:`${GOALC}14`,border:`1px solid ${GOALC}44`,borderRadius:10,padding:"10px 12px",marginBottom:8}},
           React.createElement("div",{style:{fontSize:20,textAlign:"center",marginBottom:4}},"🎉"),
           React.createElement("div",{style:{fontSize:14,fontWeight:800,color:GREEN_C,textAlign:"center",fontFamily:"'DM Sans',sans-serif"}},"You've earned "+rewards+" reward"+(rewards!==1?"s":"")+"!"),
           React.createElement("div",{style:{fontSize:13,color:txt2,textAlign:"center",fontFamily:"'DM Mono',monospace",marginTop:2}},fmtGBP(rewardAmt)+" to treat yourself 🎁")

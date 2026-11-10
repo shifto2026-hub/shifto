@@ -122,6 +122,47 @@ const shiftHours = s => {
 const shiftPay = (s,rate) => shiftHours(s)*rate + (s&&s.hasSleepover ? s.sleepoversRate||60 : 0);
 const getDaysInMonth = (y,m) => new Date(y,m+1,0).getDate();
 
+// ── Multi-slot helpers ────────────────────────────────────────────────────────
+// A "slot key" is either the legacy "date_aid" OR the new "date_aid_N" format.
+// getSlots returns [{key, shift}] for all slots on a date+agency, sorted by start time.
+const getSlots = (shifts, date, aid) => {
+  const results = [];
+  // Legacy key (no index suffix)
+  const legKey = `${date}_${aid}`;
+  if (shifts[legKey]) results.push({key:legKey, shift:shifts[legKey]});
+  // Indexed keys: date_aid_0, date_aid_1, ...
+  let i = 0;
+  while (true) {
+    const k = `${date}_${aid}_${i}`;
+    if (shifts[k]) { results.push({key:k, shift:shifts[k]}); i++; }
+    else if (i > 20) break; // safety
+    else i++;
+    if (i > 20) break;
+  }
+  // If we found both legacy AND indexed, deduplicate (legacy takes index 0 role)
+  // Sort by start time
+  results.sort((a,b)=>{
+    const at = a.shift?.startTime||"00:00", bt = b.shift?.startTime||"00:00";
+    return at.localeCompare(bt);
+  });
+  return results;
+};
+// Get the next available slot key for a date+agency (for adding a new slot)
+const nextSlotKey = (shifts, date, aid) => {
+  // If no legacy key exists, use legacy format for first slot
+  if (!shifts[`${date}_${aid}`]) return `${date}_${aid}`;
+  // Otherwise find next indexed slot
+  for (let i = 0; i <= 20; i++) {
+    const k = `${date}_${aid}_${i}`;
+    if (!shifts[k]) return k;
+  }
+  return `${date}_${aid}_0`;
+};
+// Sum hours/pay across all slots for a date+agency
+const dayHours = (shifts, date, aid) => getSlots(shifts,date,aid).reduce((s,{shift})=>s+shiftHours(shift),0);
+const dayPay   = (shifts, date, aid, rate) => getSlots(shifts,date,aid).reduce((s,{shift})=>s+shiftPay(shift,rate),0);
+const dayWorking = (shifts, date, aid) => getSlots(shifts,date,aid).some(({shift})=>shift?.working);
+
 // Get the custom pay period that contains a given date (for monthly pay with custom start day)
 const getCustomPeriod = (dateStr, startDay) => {
   const d = new Date(dateStr+"T00:00:00");
@@ -1043,7 +1084,7 @@ const ShiftPanel = ({date,shift,color,onSave,onClose,presets,allShifts,agencyId,
     const myStart = toMins(local.startTime);
     const myEnd = toMins(local.endTime) <= toMins(local.startTime) ? toMins(local.endTime)+1440 : toMins(local.endTime);
     return Object.keys(allShifts).some(k=>{
-      const [kdate,kaid]=k.split("_");
+      const parts=k.split("_"); const kdate=parts[0], kaid=parts[1];
       if (kdate!==date||kaid===agencyId) return false;
       const s=allShifts[k]; if (!s?.working||!s.startTime||!s.endTime) return false;
       const sStart=toMins(s.startTime);
@@ -1391,6 +1432,7 @@ const WeeklyView = ({agencies,shifts,setShifts,weekStartDay,accentColor,presets,
   const [offset,setOffset] = useState(0);
   const [activeAg,setActiveAg] = useState(agencies[0]?.id);
   const [panelDate,setPanelDate] = useState(null);
+  const [panelSlotKey,setPanelSlotKey] = useState(null);
   const [footerExpanded,setFooterExpanded] = useState(false);
   const baseKey = getWeekKey(today,weekStartDay);
   const weekKey = (()=>{
@@ -1418,19 +1460,23 @@ const WeeklyView = ({agencies,shifts,setShifts,weekStartDay,accentColor,presets,
 
   const weekStats = useMemo(()=>agencies.map(ag=>{
     let hours=0,pay=0;
-    weekDates.forEach(d=>{const s=getShift(d,ag.id);hours+=shiftHours(s);pay+=shiftPay(s,ag.rate);});
+    weekDates.forEach(d=>{hours+=dayHours(shifts,d,ag.id);pay+=dayPay(shifts,d,ag.id,ag.rate);});
     return {...ag,hours,pay};
   }),[weekKey,shifts,agencies]);
   const totalHours = weekStats.reduce((s,a)=>s+a.hours,0);
   const totalPay = weekStats.reduce((s,a)=>s+a.pay,0);
   const monthStats = useMemo(()=>{
-    const m=today.slice(0,7); let hours=0,pay=0; // always current month, not viewed week
+    const m=today.slice(0,7); let hours=0,pay=0;
+    // Collect unique date+aid combos to avoid double-counting
+    const seen = new Set();
     Object.keys(shifts).forEach(k=>{
-      const [date,aid]=k.split("_");
+      const parts=k.split("_"); const date=parts[0], aid=parts[1];
+      if (!date||!aid) return;
       if (!date.startsWith(m)) return;
-      const sh=shifts[k]; if (!isPaid(sh)) return;
+      const combo=`${date}_${aid}`;
+      if (seen.has(combo)) return; seen.add(combo);
       const ag=agencies.find(a=>a.id===aid); if (!ag) return;
-      hours+=shiftHours(sh); pay+=shiftPay(sh,ag.rate);
+      hours+=dayHours(shifts,date,aid); pay+=dayPay(shifts,date,aid,ag.rate);
     });
     return {hours,pay};
   },[today,shifts,agencies]);
@@ -1452,17 +1498,17 @@ const WeeklyView = ({agencies,shifts,setShifts,weekStartDay,accentColor,presets,
       result[ag.id]={hours:0, pay:0, periodStart, periodEnd, freq, weekCount:null};
     });
 
+    const seen2 = new Set();
     Object.keys(shifts).forEach(k=>{
-      const [date,aid]=k.split("_");
-      const sh=shifts[k]; if (!isPaid(sh)) return;
+      const parts=k.split("_"); const date=parts[0], aid=parts[1];
+      if (!date||!aid) return;
       if (!result[aid]) return;
-      // Include shift if its date falls in this calendar month
-      if (date >= periodStart && date <= periodEnd) {
-        const ag=agencies.find(a=>a.id===aid);
-        if (!ag) return;
-        result[aid].hours += shiftHours(sh);
-        result[aid].pay   += shiftPay(sh, ag.rate);
-      }
+      if (!(date >= periodStart && date <= periodEnd)) return;
+      const combo=`${date}_${aid}`;
+      if (seen2.has(combo)) return; seen2.add(combo);
+      const ag=agencies.find(a=>a.id===aid); if (!ag) return;
+      result[aid].hours += dayHours(shifts,date,aid);
+      result[aid].pay   += dayPay(shifts,date,aid,ag.rate);
     });
 
     return result;
@@ -1492,13 +1538,13 @@ const WeeklyView = ({agencies,shifts,setShifts,weekStartDay,accentColor,presets,
   // Partner working lookup (for my view: lookup in partner shifts; for partner view: lookup in my shifts)
   const isPartnerWorkingOn = date => {
     if (!partnerShifts||!partnerAgencies) return false;
-    return partnerAgencies.some(ag=>partnerShifts[`${date}_${ag.id}`]?.working);
+    return partnerAgencies.some(ag=>dayWorking(partnerShifts,date,ag.id));
   };
 
   // Own other-workplace clash: does this person also have a shift at another agency on the same date?
   const otherAgencyClashOn = date => {
     if (!agency) return null;
-    return agencies.filter(ag => ag.id !== agency.id && shifts[`${date}_${ag.id}`]?.working);
+    return agencies.filter(ag => ag.id !== agency.id && dayWorking(shifts,date,ag.id));
   };
 
   return React.createElement("div",{style:{display:"flex",flexDirection:"column",flex:1,minHeight:0,overflow:"hidden",position:"relative"}},
@@ -1534,22 +1580,50 @@ const WeeklyView = ({agencies,shifts,setShifts,weekStartDay,accentColor,presets,
     // Day rows
     React.createElement("div",{style:{flex:1,overflowY:"auto",padding:"10px 14px 8px",WebkitOverflowScrolling:"touch",display:"flex",flexDirection:"column",gap:5}},
       agency&&weekDates.map(date=>{
-        const lastWeekShift = getLastWeekShift(date,agency.id);
+        const slots = getSlots(shifts,date,agency.id);
         const clashAgencies = otherAgencyClashOn(date);
-        return React.createElement(ShiftRow,{
-          key:date,date,
-          shift:getShift(date,agency.id),
-          partnerWorking:isPartnerWorkingOn(date),
-          clashAgencies,
-          accentColor:accent,
-          isPartnerView:!!isPartnerView,
-          theme,
-          onOpen:()=>setPanelDate(date),
-          onClear:()=>clearShift(date,agency.id),
-          onCopyLast:lastWeekShift&&lastWeekShift.working?()=>{
-            setShift(date,agency.id,{...lastWeekShift,id:uuid(),agencyId:agency.id,_manual:true});
-          }:null
-        });
+        const partnerWorking = isPartnerWorkingOn(date);
+        const lastWeekSlots = getSlots(shifts,addDays(date,-7),agency.id);
+        const lastWeekShift = lastWeekSlots.length>0 ? lastWeekSlots[0].shift : null;
+        // Show at least one row (blank if no slots)
+        const displaySlots = slots.length>0 ? slots : [{key:`${date}_${agency.id}`, shift:null}];
+        return React.createElement("div",{key:date,style:{display:"flex",flexDirection:"column",gap:2}},
+          displaySlots.map(({key:slotKey, shift}, si) =>
+            React.createElement(ShiftRow,{
+              key:slotKey,
+              date, shift:shift||blankShift(agency.id),
+              slotIndex:si, totalSlots:displaySlots.length,
+              partnerWorking: si===0 ? partnerWorking : false,
+              clashAgencies: si===0 ? clashAgencies : [],
+              accentColor:accent,
+              isPartnerView:!!isPartnerView,
+              theme,
+              onOpen:()=>{ setPanelSlotKey(slotKey); setPanelDate(date); },
+              onClear:()=>{ setShifts(p=>{const n={...p};delete n[slotKey];return n;}); triggerAutoSync(); },
+              onCopyLast: si===0&&lastWeekShift?.working ? ()=>{
+                const nk = nextSlotKey(shifts,date,agency.id);
+                setShift(date,agency.id,{...lastWeekShift,id:uuid(),agencyId:agency.id,_manual:true});
+              } : null
+            })
+          ),
+          // "+" add slot button — only show when at least one working shift exists on this day
+          slots.some(s=>s.shift?.working) && React.createElement("button",{
+            onClick:()=>{
+              const nk = nextSlotKey(shifts,date,agency.id);
+              setShifts(p=>({...p,[nk]:blankShift(agency.id)}));
+              triggerAutoSync();
+              setPanelSlotKey(nk); setPanelDate(date);
+            },
+            style:{
+              alignSelf:"flex-end",marginRight:2,
+              background:"transparent",border:`1px dashed ${accent}66`,
+              borderRadius:8,padding:"3px 10px",
+              color:accent,fontSize:11,fontWeight:700,
+              fontFamily:"'DM Sans',sans-serif",cursor:"pointer",
+              opacity:0.8
+            }
+          },"+ Add shift")
+        );
       })
     ),
     // Summary
@@ -1557,17 +1631,21 @@ const WeeklyView = ({agencies,shifts,setShifts,weekStartDay,accentColor,presets,
       React.createElement(SummaryTile,{weekStats,totalHours,totalPay,monthPay:monthStats.pay,monthHours:monthStats.hours,weekKey,targetHours:targetHours||0,accentColor:accent,theme,payDetails,agencies,isCurrentWeek,activeAgId:activeAg,agencyMonthStats,summaryPeriod,footerExpanded,setFooterExpanded,prefs,setPrefs,isPartnerView:!!isPartnerView})
     ),
     // Panel
-    panelDate&&panelShift&&React.createElement(ShiftPanel,{
-      date:panelDate,
-      shift:panelShift,
-      color:agency?.color||accent,
-      presets,
-      allShifts:shifts,
-      agencyId:agency?.id,
-      onSave:s=>setShift(panelDate,agency.id,s),
-      onClose:()=>setPanelDate(null),
-      theme
-    })
+    panelDate&&agency&&(()=>{
+      const slotKey = panelSlotKey || `${panelDate}_${agency.id}`;
+      const slotShift = shifts[slotKey] || blankShift(agency.id);
+      return React.createElement(ShiftPanel,{
+        date:panelDate,
+        shift:slotShift,
+        color:agency.color||accent,
+        presets,
+        allShifts:shifts,
+        agencyId:agency.id,
+        onSave:s=>{ setShifts(p=>({...p,[slotKey]:s})); triggerAutoSync(); },
+        onClose:()=>{ setPanelDate(null); setPanelSlotKey(null); },
+        theme
+      });
+    })()
   );
 };
 
@@ -1580,17 +1658,18 @@ const MiniCal = ({year,month,shifts,setShifts,agencies,label,accentColor,weekSta
   const startPad = (firstDay-weekStartDay+7)%7;
   const dayHdrs = Array.from({length:7},(_,i)=>["Su","Mo","Tu","We","Th","Fr","Sa"][(weekStartDay+i)%7]);
   const accent = accentColor||BLUE;
-  const isWorking = dateStr=>agencies.some(ag=>shifts[`${dateStr}_${ag.id}`]?.working);
-  const isLogged = dateStr=>agencies.some(ag=>shifts[`${dateStr}_${ag.id}`]);
-  const hasNote = dateStr=>agencies.some(ag=>shifts[`${dateStr}_${ag.id}`]?.note?.trim());
+  const isWorking = dateStr=>agencies.some(ag=>dayWorking(shifts,dateStr,ag.id));
+  const isLogged = dateStr=>agencies.some(ag=>getSlots(shifts,dateStr,ag.id).length>0);
+  const hasNote = dateStr=>agencies.some(ag=>getSlots(shifts,dateStr,ag.id).some(({shift})=>shift?.note?.trim()));
   const colIsWeekend = Array.from({length:7},(_,i)=>{const dow=(weekStartDay+i)%7;return dow===0||dow===6;});
 
-  // Get all shift details for a date
+  // Get all shift details for a date (all slots across all agencies)
   const getDayDetails = dateStr=>{
     const details=[];
     agencies.forEach(ag=>{
-      const s=shifts[`${dateStr}_${ag.id}`];
-      if (s) details.push({agency:ag,shift:s});
+      getSlots(shifts,dateStr,ag.id).forEach(({shift})=>{
+        if (shift) details.push({agency:ag,shift});
+      });
     });
     return details;
   };
@@ -2102,7 +2181,7 @@ const PaymentTracker = ({myAgencies,myShifts,partnerAgencies,partnerShifts,myPay
         // Find all distinct weeks that have at least one shift for this agency
         const weekKeys = new Set();
         Object.keys(shifts).forEach(k => {
-          const [date, aid] = k.split("_");
+          const parts=k.split("_"); const date=parts[0], aid=parts[1];
           if (aid !== ag.id) return;
           if (!isPaid(shifts[k])) return;
           weekKeys.add(getWeekStartStr(date));
@@ -2119,14 +2198,14 @@ const PaymentTracker = ({myAgencies,myShifts,partnerAgencies,partnerShifts,myPay
           payDate.setDate(payDate.getDate() + payDelay);
           const payDateStr = payDate.toISOString().slice(0,10);
 
-          // Sum hours and pay for this agency across all 7 days
+          // Sum hours and pay across all slots for each day of this week
           let hours=0, gross=0;
           for (let i=0; i<7; i++) {
             const d = new Date(wkStart+"T00:00:00");
             d.setDate(d.getDate()+i);
             const ds = d.toISOString().slice(0,10);
-            const sh = shifts[`${ds}_${ag.id}`];
-            if (isPaid(sh)) { hours+=shiftHours(sh); gross+=shiftPay(sh, ag.rate); }
+            hours += dayHours(shifts, ds, ag.id);
+            gross += dayPay(shifts, ds, ag.id, ag.rate);
           }
           if (hours === 0) return;
 
@@ -2152,13 +2231,10 @@ const PaymentTracker = ({myAgencies,myShifts,partnerAgencies,partnerShifts,myPay
         // Collect all period keys (YYYY-MM of the period start) that contain shifts
         const periodKeys = new Set();
         Object.keys(shifts).forEach(k => {
-          const [date, aid] = k.split("_");
+          const parts=k.split("_"); const date=parts[0], aid=parts[1];
           if (aid !== ag.id) return;
           if (!isPaid(shifts[k])) return;
-          // Which period does this date fall in?
           const [dy, dm, dd] = date.split("-").map(Number);
-          // If day >= startDay, period started this month
-          // If day < startDay, period started previous month
           let pm = dm, py = dy;
           if (dd < startDay) { pm = dm===1?12:dm-1; py = dm===1?dy-1:dy; }
           periodKeys.add(`${py}-${String(pm).padStart(2,"0")}`);
@@ -2182,12 +2258,14 @@ const PaymentTracker = ({myAgencies,myShifts,partnerAgencies,partnerShifts,myPay
           const payDateStr = `${payYear}-${String(payMonth).padStart(2,"0")}-${String(actualPayDay).padStart(2,"0")}`;
 
           let hours=0, gross=0;
+          const seenDates = new Set();
           Object.keys(shifts).forEach(k2 => {
-            const [date, aid] = k2.split("_");
+            const parts=k2.split("_"); const date=parts[0], aid=parts[1];
             if (aid !== ag.id) return;
             if (date < periodStart || date > periodEnd) return;
-            if (!isPaid(shifts[k2])) return;
-            hours+=shiftHours(shifts[k2]); gross+=shiftPay(shifts[k2], ag.rate);
+            if (seenDates.has(date)) return; seenDates.add(date);
+            hours += dayHours(shifts, date, ag.id);
+            gross += dayPay(shifts, date, ag.id, ag.rate);
           });
           if (hours === 0) return;
 

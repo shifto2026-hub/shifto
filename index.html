@@ -1059,7 +1059,7 @@ const SummaryTile = ({weekStats,totalHours,totalPay,monthPay,monthHours,weekKey,
 };
 
 // ─── Shift Dialog (centred modal) ─────────────────────────────────────────────
-const ShiftPanel = ({date,shift,color,onSave,onClose,presets,allShifts,agencyId,theme}) => {
+const ShiftPanel = ({date,shift,color,onSave,onClose,presets,allShifts,agencyId,theme,onAddAnother}) => {
   const isDarkP = (theme||"dark")==="dark";
   const P = {
     bg:       isDarkP ? "#243460"  : "#ffffff",
@@ -1237,15 +1237,26 @@ const ShiftPanel = ({date,shift,color,onSave,onClose,presets,allShifts,agencyId,
           color:P.text3,fontSize:20,cursor:"pointer",
           display:"flex",alignItems:"center",justifyContent:"center"
         }},"✕"),
-        React.createElement("button",{onClick:handleConfirm,style:{
-          flex:1,height:52,borderRadius:14,border:"none",cursor:"pointer",
-          background:isWorking?`linear-gradient(135deg,${BLUE} 0%,${BLUE_L} 100%)`:P.toggle,
-          color:isWorking?"#fff":P.text,fontFamily:"'DM Sans',sans-serif",fontWeight:800,fontSize:16,
-          boxShadow:isWorking?`0 4px 24px ${BLUE}55`:"none",
-          display:"flex",alignItems:"center",justifyContent:"center",gap:10
-        }},
-          React.createElement("span",{style:{fontSize:20}},"✓"),
-          isWorking?"Confirm Shift":"Confirm Day Off"
+        React.createElement("div",{style:{flex:1,display:"flex",flexDirection:"column",gap:8}},
+          React.createElement("button",{onClick:handleConfirm,style:{
+            width:"100%",height:52,borderRadius:14,border:"none",cursor:"pointer",
+            background:isWorking?`linear-gradient(135deg,${BLUE} 0%,${BLUE_L} 100%)`:P.toggle,
+            color:isWorking?"#fff":P.text,fontFamily:"'DM Sans',sans-serif",fontWeight:800,fontSize:16,
+            boxShadow:isWorking?`0 4px 24px ${BLUE}55`:"none",
+            display:"flex",alignItems:"center",justifyContent:"center",gap:10
+          }},
+            React.createElement("span",{style:{fontSize:20}},"✓"),
+            isWorking?"Confirm Shift":"Confirm Day Off"
+          ),
+          onAddAnother&&isWorking&&React.createElement("button",{
+            onClick:()=>{ onSave({...local,_manual:true}); onAddAnother(); },
+            style:{
+              width:"100%",height:40,borderRadius:12,cursor:"pointer",
+              background:"transparent",border:`1.5px dashed ${BLUE}88`,
+              color:BLUE,fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:13,
+              display:"flex",alignItems:"center",justifyContent:"center",gap:6
+            }
+          },"＋  Add another shift for this day")
         )
       )
     )
@@ -1606,23 +1617,7 @@ const WeeklyView = ({agencies,shifts,setShifts,weekStartDay,accentColor,presets,
               } : null
             })
           ),
-          // "+" add slot button — only show when at least one working shift exists on this day
-          slots.some(s=>s.shift?.working) && React.createElement("button",{
-            onClick:()=>{
-              const nk = nextSlotKey(shifts,date,agency.id);
-              setShifts(p=>({...p,[nk]:blankShift(agency.id)}));
-              triggerAutoSync();
-              setPanelSlotKey(nk); setPanelDate(date);
-            },
-            style:{
-              alignSelf:"flex-end",marginRight:2,
-              background:"transparent",border:`1px dashed ${accent}66`,
-              borderRadius:8,padding:"3px 10px",
-              color:accent,fontSize:11,fontWeight:700,
-              fontFamily:"'DM Sans',sans-serif",cursor:"pointer",
-              opacity:0.8
-            }
-          },"+ Add shift")
+          null
         );
       })
     ),
@@ -1643,7 +1638,14 @@ const WeeklyView = ({agencies,shifts,setShifts,weekStartDay,accentColor,presets,
         agencyId:agency.id,
         onSave:s=>{ setShifts(p=>({...p,[slotKey]:s})); triggerAutoSync(); },
         onClose:()=>{ setPanelDate(null); setPanelSlotKey(null); },
-        theme
+        theme,
+        onAddAnother:()=>{
+          const nk = nextSlotKey(shifts,panelDate,agency.id);
+          setShifts(p=>({...p,[nk]:blankShift(agency.id)}));
+          triggerAutoSync();
+          setPanelSlotKey(nk);
+          // panelDate stays the same, panel re-opens with blank shift
+        }
       });
     })()
   );

@@ -2260,9 +2260,12 @@ const PaymentTracker = ({myAgencies,myShifts,partnerAgencies,partnerShifts,myPay
     return result;
   },[agencies, shifts]);
 
-  // Apply date + paid filter
+  // Apply date + paid filter (cap future periods at 2 months ahead)
   const rows = useMemo(() => {
+    const cutoff = new Date(); cutoff.setMonth(cutoff.getMonth()+2);
+    const cutoffStr = cutoff.toISOString().slice(0,10);
     return allRows.filter(r => {
+      if (r.periodStart > cutoffStr) return false;
       if (!showPaid && r.paid) return false;
       if (filterFrom && r.periodEnd < filterFrom) return false;
       if (filterTo   && r.periodStart > filterTo)  return false;

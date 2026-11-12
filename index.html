@@ -1611,19 +1611,28 @@ const WeeklyView = ({agencies,shifts,setShifts,weekStartDay,accentColor,presets,
     React.createElement("div",{style:{flex:1,overflowY:"auto",padding:"10px 14px 8px",WebkitOverflowScrolling:"touch",display:"flex",flexDirection:"column",gap:5}},
       weekDates.map(date=>{
         const partnerWorking = isPartnerWorkingOn(date);
-        // For each visible agency, build rows
-        const agRows = visibleAgencies.flatMap(ag=>{
+        // Collect only agencies that have actual shifts on this date (for visible agencies)
+        const workingAgRows = visibleAgencies.flatMap(ag=>{
           const slots = getSlots(shifts,date,ag.id);
-          const displaySlots = slots.length>0 ? slots : [{key:`${date}_${ag.id}`, shift:null}];
-          return displaySlots.map(({key:slotKey, shift:slotShift}, si)=>({ag, slotKey, slotShift, si, totalSlots:displaySlots.length}));
+          if (slots.length===0) return [];
+          return slots.map(({key:slotKey, shift:slotShift}, si)=>({ag, slotKey, slotShift, si, totalSlots:slots.length, hasShift:true}));
         });
+        // If nobody has a shift this day, show one blank "off" row (tappable to add)
+        const isOff = workingAgRows.length===0;
+        const firstAg = visibleAgencies[0];
+        const offKey = firstAg ? `${date}_${firstAg.id}` : date;
+        const agRows = isOff
+          ? [{ag:firstAg||{id:"",name:"",color:accent}, slotKey:offKey, slotShift:null, si:0, totalSlots:1, hasShift:false}]
+          : workingAgRows;
+        // Show badge only when multiple agencies have shifts on this day (or in filter mode)
+        const showBadge = workingAgRows.length>1 || (activeAg!=="all"&&false);
         return React.createElement("div",{key:date,style:{display:"flex",flexDirection:"column",gap:2}},
-          agRows.map(({ag, slotKey, slotShift, si, totalSlots}, ri)=>{
+          agRows.map(({ag, slotKey, slotShift, si, totalSlots, hasShift}, ri)=>{
             const lastWeekSlots = getSlots(shifts,addDays(date,-7),ag.id);
             const lastWeekShift = lastWeekSlots.length>0 ? lastWeekSlots[0].shift : null;
             const clashAgencies = si===0 ? otherAgencyClashOn(date, ag.id) : [];
-            // Agency initial badge (circled letter on right)
-            const agBadge = visibleAgencies.length>1 ? React.createElement("div",{
+            // Agency badge — only shown when >1 agency row on this day
+            const agBadge = showBadge ? React.createElement("div",{
               style:{
                 position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",
                 width:22,height:22,borderRadius:"50%",
@@ -1631,7 +1640,7 @@ const WeeklyView = ({agencies,shifts,setShifts,weekStartDay,accentColor,presets,
                 border:`1.5px solid ${ag.color||accent}88`,
                 display:"flex",alignItems:"center",justifyContent:"center",
                 fontSize:11,fontWeight:800,color:ag.color||accent,
-                fontFamily:"'DM Sans',sans-serif",zIndex:2,pointerEvents:"none",flexShrink:0
+                fontFamily:"'DM Sans',sans-serif",zIndex:2,pointerEvents:"none"
               }
             },(ag.name||"?")[0].toUpperCase()) : null;
             return React.createElement("div",{key:slotKey,style:{position:"relative"}},
@@ -1645,8 +1654,8 @@ const WeeklyView = ({agencies,shifts,setShifts,weekStartDay,accentColor,presets,
                 isPartnerView:!!isPartnerView,
                 theme,
                 onOpen:()=>{
-                  if (!slotShift && activeAg==="all" && agencies.length>1) {
-                    // Empty row in all-agencies mode — open agency picker
+                  if (!hasShift && activeAg==="all" && agencies.length>1) {
+                    // Off day in all-agencies mode — ask which agency
                     setAgencyPickerDate(date);
                   } else {
                     setPanelSlotKey(slotKey);

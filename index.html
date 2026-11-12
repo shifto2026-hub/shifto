@@ -1059,7 +1059,7 @@ const SummaryTile = ({weekStats,totalHours,totalPay,monthPay,monthHours,weekKey,
 };
 
 // ─── Shift Dialog (centred modal) ─────────────────────────────────────────────
-const ShiftPanel = ({date,shift,color,onSave,onClose,presets,allShifts,agencyId,theme,onAddAnother}) => {
+const ShiftPanel = ({date,shift,color,onSave,onClose,presets,allShifts,agencyId,theme,onAddAnother,agencies,onAgencyChange}) => {
   const isDarkP = (theme||"dark")==="dark";
   const P = {
     bg:       isDarkP ? "#243460"  : "#ffffff",
@@ -1102,11 +1102,11 @@ const ShiftPanel = ({date,shift,color,onSave,onClose,presets,allShifts,agencyId,
   return React.createElement(React.Fragment,null,
     React.createElement("div",{onClick:onClose,style:{position:"fixed",inset:0,background:"rgba(5,8,20,0.78)",zIndex:400,backdropFilter:"blur(6px)"}}),
     React.createElement("div",{style:{
-      position:"fixed",top:"50%",left:"50%",transform:"translate(-50%,-50%)",
-      width:"calc(100% - 40px)",maxWidth:390,
-      zIndex:500, background:P.bg, borderRadius:24,
-      boxShadow:`0 24px 80px rgba(0,0,0,0.7), 0 0 0 1px ${isWorking?BLUE+"44":P.border}`,
-      overflow:"hidden", display:"flex", flexDirection:"column", maxHeight:"85vh"
+      position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",
+      width:"100%",maxWidth:430,
+      zIndex:500, background:P.bg, borderRadius:"24px 24px 0 0",
+      boxShadow:`0 -8px 40px rgba(0,0,0,0.5), 0 0 0 1px ${isWorking?BLUE+"44":P.border}`,
+      display:"flex", flexDirection:"column", maxHeight:"92vh"
     }},
       // Banner
       React.createElement("div",{style:{
@@ -1115,7 +1115,30 @@ const ShiftPanel = ({date,shift,color,onSave,onClose,presets,allShifts,agencyId,
         borderBottom:`1px solid ${isWorking?BLUE+"33":P.border}`,flexShrink:0
       }},
         React.createElement("div",{style:{fontSize:13,fontWeight:700,color:isWorking?BLUE:P.text3,letterSpacing:"0.08em",textTransform:"uppercase",fontFamily:"'DM Sans',sans-serif",marginBottom:4}},dayName2),
-        React.createElement("div",{style:{fontSize:28,fontWeight:900,color:P.text,fontFamily:"'DM Sans',sans-serif",lineHeight:1.1,marginBottom:16}},dayDate),
+        React.createElement("div",{style:{fontSize:28,fontWeight:900,color:P.text,fontFamily:"'DM Sans',sans-serif",lineHeight:1.1,marginBottom:agencies&&agencies.length>1?10:16}},dayDate),
+        // Agency selector pills — only shown when multiple agencies exist
+        agencies&&agencies.length>1&&React.createElement("div",{style:{display:"flex",gap:6,marginBottom:14}},
+          agencies.map(ag=>React.createElement("button",{
+            key:ag.id,
+            onClick:()=>onAgencyChange&&onAgencyChange(ag.id),
+            style:{
+              padding:"5px 12px",borderRadius:20,cursor:"pointer",
+              background:ag.id===agencyId?(ag.color||BLUE)+"22":"transparent",
+              border:`1.5px solid ${ag.id===agencyId?(ag.color||BLUE):(P.text3+"55")}`,
+              color:ag.id===agencyId?(ag.color||BLUE):P.text3,
+              fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:12,
+              display:"flex",alignItems:"center",gap:5,transition:"all 0.15s"
+            }
+          },
+            React.createElement("div",{style:{
+              width:16,height:16,borderRadius:"50%",
+              background:ag.id===agencyId?(ag.color||BLUE):(P.text3+"44"),
+              display:"flex",alignItems:"center",justifyContent:"center",
+              fontSize:9,fontWeight:900,color:"#fff"
+            }},(ag.name||"?")[0].toUpperCase()),
+            ag.name
+          ))
+        ),
         React.createElement("div",{style:{display:"flex",background:P.toggle,borderRadius:14,padding:4,gap:4}},
           React.createElement("button",{"data-on":String(isWorking),onClick:()=>setLocal(s=>({...s,working:true})),style:{
             flex:1,padding:"10px 0",borderRadius:10,border:"none",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:800,fontSize:14,transition:"all 0.2s",
@@ -1264,7 +1287,7 @@ const ShiftPanel = ({date,shift,color,onSave,onClose,presets,allShifts,agencyId,
 };
 
 // ─── Shift Row ────────────────────────────────────────────────────────────────
-const ShiftRow = ({date,shift,partnerWorking,clashAgencies,onOpen,onClear,onCopyLast,accentColor,isPartnerView,theme}) => {
+const ShiftRow = ({date,shift,partnerWorking,clashAgencies,onOpen,onClear,onCopyLast,accentColor,isPartnerView,theme,agencyBadge}) => {
   const d = new Date(date+"T00:00:00");
   const today = localDate();
   const isToday = date===today;
@@ -1415,6 +1438,8 @@ const ShiftRow = ({date,shift,partnerWorking,clashAgencies,onOpen,onClear,onCopy
                   : React.createElement(FeminineIcon,{size:20,color:ORANGE})
               )
             : null,
+          // Agency badge — shown when this day has shifts from multiple agencies
+          agencyBadge||null,
           // Hours or Off — always at the far right end
           isWorking&&hrs>0
             ? React.createElement("span",{style:{fontSize:13,fontWeight:700,color:accent,fontFamily:"'DM Mono',monospace",minWidth:32,textAlign:"right"}},fmtHours(hrs))
@@ -1624,53 +1649,49 @@ const WeeklyView = ({agencies,shifts,setShifts,weekStartDay,accentColor,presets,
         const agRows = isOff
           ? [{ag:firstAg||{id:"",name:"",color:accent}, slotKey:offKey, slotShift:null, si:0, totalSlots:1, hasShift:false}]
           : workingAgRows;
-        // Show badge only when multiple agencies have shifts on this day (or in filter mode)
-        const showBadge = workingAgRows.length>1 || (activeAg!=="all"&&false);
+        // Show badge when multiple agencies have shifts on this day
+        const showBadge = workingAgRows.length > 1;
         return React.createElement("div",{key:date,style:{display:"flex",flexDirection:"column",gap:2}},
           agRows.map(({ag, slotKey, slotShift, si, totalSlots, hasShift}, ri)=>{
             const lastWeekSlots = getSlots(shifts,addDays(date,-7),ag.id);
             const lastWeekShift = lastWeekSlots.length>0 ? lastWeekSlots[0].shift : null;
             const clashAgencies = si===0 ? otherAgencyClashOn(date, ag.id) : [];
-            // Agency badge — only shown when >1 agency row on this day
-            const agBadge = showBadge ? React.createElement("div",{
+            // Agency badge rendered INSIDE the row (passed as prop) — no overlap
+            const agencyBadge = showBadge ? React.createElement("div",{
               style:{
-                position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",
-                width:22,height:22,borderRadius:"50%",
+                width:20,height:20,borderRadius:"50%",flexShrink:0,
                 background:(ag.color||accent)+"33",
-                border:`1.5px solid ${ag.color||accent}88`,
+                border:`1.5px solid ${ag.color||accent}99`,
                 display:"flex",alignItems:"center",justifyContent:"center",
-                fontSize:11,fontWeight:800,color:ag.color||accent,
-                fontFamily:"'DM Sans',sans-serif",zIndex:2,pointerEvents:"none"
+                fontSize:10,fontWeight:800,color:ag.color||accent,
+                fontFamily:"'DM Sans',sans-serif"
               }
             },(ag.name||"?")[0].toUpperCase()) : null;
-            return React.createElement("div",{key:slotKey,style:{position:"relative"}},
-              React.createElement(ShiftRow,{
-                key:slotKey,
-                date, shift:slotShift||blankShift(ag.id),
-                slotIndex:si, totalSlots,
-                partnerWorking: ri===0 ? partnerWorking : false,
-                clashAgencies,
-                accentColor:ag.color||accent,
-                isPartnerView:!!isPartnerView,
-                theme,
-                onOpen:()=>{
-                  if (!hasShift && activeAg==="all" && agencies.length>1) {
-                    // Off day in all-agencies mode — ask which agency
-                    setAgencyPickerDate(date);
-                  } else {
-                    setPanelSlotKey(slotKey);
-                    setPanelDate(date);
-                    setPanelAgId(ag.id);
-                  }
-                },
-                onClear:()=>{ setShifts(p=>{const n={...p};delete n[slotKey];return n;}); triggerAutoSync(); },
-                onCopyLast: si===0&&lastWeekShift?.working ? ()=>{
-                  const nk = nextSlotKey(shifts,date,ag.id);
-                  setShift(date,ag.id,{...lastWeekShift,id:uuid(),agencyId:ag.id,_manual:true});
-                } : null
-              }),
-              agBadge
-            );
+            return React.createElement(ShiftRow,{
+              key:slotKey,
+              date, shift:slotShift||blankShift(ag.id),
+              slotIndex:si, totalSlots,
+              partnerWorking: ri===0 ? partnerWorking : false,
+              clashAgencies,
+              accentColor:ag.color||accent,
+              isPartnerView:!!isPartnerView,
+              theme,
+              agencyBadge,
+              onOpen:()=>{
+                if (!hasShift && activeAg==="all" && agencies.length>1) {
+                  setAgencyPickerDate(date);
+                } else {
+                  setPanelSlotKey(slotKey);
+                  setPanelDate(date);
+                  setPanelAgId(ag.id);
+                }
+              },
+              onClear:()=>{ setShifts(p=>{const n={...p};delete n[slotKey];return n;}); triggerAutoSync(); },
+              onCopyLast: si===0&&lastWeekShift?.working ? ()=>{
+                const nk = nextSlotKey(shifts,date,ag.id);
+                setShift(date,ag.id,{...lastWeekShift,id:uuid(),agencyId:ag.id,_manual:true});
+              } : null
+            });
           })
         );
       })
@@ -1730,6 +1751,13 @@ const WeeklyView = ({agencies,shifts,setShifts,weekStartDay,accentColor,presets,
         onSave:s=>{ setShifts(p=>({...p,[slotKey]:s})); triggerAutoSync(); },
         onClose:()=>{ setPanelDate(null); setPanelSlotKey(null); setPanelAgId(null); },
         theme,
+        agencies,
+        onAgencyChange:newAgId=>{
+          // Switch panel to a different agency for the same date
+          const newSlotKey = `${panelDate}_${newAgId}`;
+          setPanelAgId(newAgId);
+          setPanelSlotKey(newSlotKey);
+        },
         onAddAnother:()=>{
           const nk = nextSlotKey(shifts,panelDate,panelAgency.id);
           setShifts(p=>({...p,[nk]:blankShift(panelAgency.id)}));

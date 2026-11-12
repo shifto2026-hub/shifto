@@ -1441,9 +1441,11 @@ const WeeklyView = ({agencies,shifts,setShifts,weekStartDay,accentColor,presets,
   const WTXT3  = isWDark ? TEXT3 : "#6a7a9a";
   const today = localDate();
   const [offset,setOffset] = useState(0);
-  const [activeAg,setActiveAg] = useState(agencies[0]?.id);
+  const [activeAg,setActiveAg] = useState("all");
   const [panelDate,setPanelDate] = useState(null);
   const [panelSlotKey,setPanelSlotKey] = useState(null);
+  const [panelAgId,setPanelAgId] = useState(null);
+  const [agencyPickerDate,setAgencyPickerDate] = useState(null);
   const [footerExpanded,setFooterExpanded] = useState(false);
   const baseKey = getWeekKey(today,weekStartDay);
   const weekKey = (()=>{
@@ -1452,7 +1454,8 @@ const WeeklyView = ({agencies,shifts,setShifts,weekStartDay,accentColor,presets,
     return `${y}-${m}-${day}`;
   })();
   const weekDates = getWeekDates(weekKey);
-  const agency = agencies.find(a=>a.id===activeAg);
+  const agency = activeAg==="all" ? null : agencies.find(a=>a.id===activeAg);
+  const visibleAgencies = agency ? [agency] : agencies;
   const getShift = (date,aid) => shifts[`${date}_${aid}`]||blankShift(aid);
   const setShift = (date,aid,s) => {
     setShifts(p=>({...p,[`${date}_${aid}`]:s}));
@@ -1527,7 +1530,8 @@ const WeeklyView = ({agencies,shifts,setShifts,weekStartDay,accentColor,presets,
 
   const isCurrentWeek = offset===0;
   const accent = accentColor||BLUE;
-  const panelShift = panelDate&&agency ? getShift(panelDate,agency.id) : null;
+  const panelAgency = panelAgId ? agencies.find(a=>a.id===panelAgId) : agency;
+  const panelShift = panelDate&&panelAgency ? getShift(panelDate,panelAgency.id) : null;
 
   // ─── Timesheet due today (for banner) ───────────────────────────────────────
   const timesheetDueToday = useMemo(()=>{
@@ -1553,9 +1557,8 @@ const WeeklyView = ({agencies,shifts,setShifts,weekStartDay,accentColor,presets,
   };
 
   // Own other-workplace clash: does this person also have a shift at another agency on the same date?
-  const otherAgencyClashOn = date => {
-    if (!agency) return null;
-    return agencies.filter(ag => ag.id !== agency.id && dayWorking(shifts,date,ag.id));
+  const otherAgencyClashOn = (date, forAgId) => {
+    return agencies.filter(ag => ag.id !== forAgId && dayWorking(shifts,date,ag.id));
   };
 
   return React.createElement("div",{style:{display:"flex",flexDirection:"column",flex:1,minHeight:0,overflow:"hidden",position:"relative"}},
@@ -1570,10 +1573,26 @@ const WeeklyView = ({agencies,shifts,setShifts,weekStartDay,accentColor,presets,
         React.createElement("button",{onClick:()=>setOffset(o=>o+1),style:{background:WBG2,border:`1px solid ${isWDark?WBDR:"rgba(26,39,68,0.12)"}`,borderRadius:10,color:WTXT3,padding:"5px 13px",cursor:"pointer",fontSize:17}},"›"),
         !isCurrentWeek&&React.createElement("button",{onClick:()=>setOffset(0),style:{background:WBG2,border:`1px solid ${isWDark?WBDR:"rgba(26,39,68,0.12)"}`,borderRadius:9,color:accent,padding:"5px 10px",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:700}},"Today")
       ),
-      React.createElement("div",{style:{display:"flex",gap:7,marginBottom:timesheetDueToday.length>0?8:0}},
-        agencies.map(ag=>
-          React.createElement("button",{"data-on":String(activeAg===ag.id),key:ag.id,onClick:()=>setActiveAg(ag.id),style:{flex:1,padding:"8px",borderRadius:10,cursor:"pointer",background:activeAg===ag.id?(isWDark?`${ag.color}22`:"#c9a843"):WBG2,border:`1.5px solid ${activeAg===ag.id?(isWDark?ag.color:"#c9a843"):(isWDark?WBDR:"rgba(26,39,68,0.12)")}`,color:activeAg===ag.id?(isWDark?ag.color:"#1a2744"):WTXT2,fontFamily:"'DM Sans',sans-serif",fontWeight:800,fontSize:13,transition:"all 0.18s",boxShadow:activeAg===ag.id&&!isWDark?"0 2px 8px rgba(201,168,67,0.3)":"none"}},ag.name)
-        )
+      React.createElement("div",{style:{marginBottom:timesheetDueToday.length>0?8:0,position:"relative"}},
+        React.createElement("select",{
+          value:activeAg,
+          onChange:e=>setActiveAg(e.target.value),
+          style:{
+            width:"100%",padding:"9px 36px 9px 14px",borderRadius:10,cursor:"pointer",
+            background:isWDark?BG2:"#ffffff",
+            border:`1.5px solid ${isWDark?WBDR:"rgba(26,39,68,0.14)"}`,
+            color:WTXT2,fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:13,
+            appearance:"none",WebkitAppearance:"none",outline:"none",
+            boxShadow:isWDark?"none":"0 1px 4px rgba(26,39,68,0.07)"
+          }
+        },
+          React.createElement("option",{value:"all"},"All agencies"),
+          agencies.map(ag=>React.createElement("option",{key:ag.id,value:ag.id},ag.name))
+        ),
+        React.createElement("span",{style:{
+          position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",
+          pointerEvents:"none",color:WTXT3,fontSize:12
+        }},"▾")
       ),
       // Timesheet due banner — only shows on days when a reminder is scheduled
       timesheetDueToday.length>0&&React.createElement("div",{style:{
@@ -1590,34 +1609,60 @@ const WeeklyView = ({agencies,shifts,setShifts,weekStartDay,accentColor,presets,
     // Footer overlay removed — was blocking input interaction in expanded footer
     // Day rows
     React.createElement("div",{style:{flex:1,overflowY:"auto",padding:"10px 14px 8px",WebkitOverflowScrolling:"touch",display:"flex",flexDirection:"column",gap:5}},
-      agency&&weekDates.map(date=>{
-        const slots = getSlots(shifts,date,agency.id);
-        const clashAgencies = otherAgencyClashOn(date);
+      weekDates.map(date=>{
         const partnerWorking = isPartnerWorkingOn(date);
-        const lastWeekSlots = getSlots(shifts,addDays(date,-7),agency.id);
-        const lastWeekShift = lastWeekSlots.length>0 ? lastWeekSlots[0].shift : null;
-        // Show at least one row (blank if no slots)
-        const displaySlots = slots.length>0 ? slots : [{key:`${date}_${agency.id}`, shift:null}];
+        // For each visible agency, build rows
+        const agRows = visibleAgencies.flatMap(ag=>{
+          const slots = getSlots(shifts,date,ag.id);
+          const displaySlots = slots.length>0 ? slots : [{key:`${date}_${ag.id}`, shift:null}];
+          return displaySlots.map(({key:slotKey, shift:slotShift}, si)=>({ag, slotKey, slotShift, si, totalSlots:displaySlots.length}));
+        });
         return React.createElement("div",{key:date,style:{display:"flex",flexDirection:"column",gap:2}},
-          displaySlots.map(({key:slotKey, shift}, si) =>
-            React.createElement(ShiftRow,{
-              key:slotKey,
-              date, shift:shift||blankShift(agency.id),
-              slotIndex:si, totalSlots:displaySlots.length,
-              partnerWorking: si===0 ? partnerWorking : false,
-              clashAgencies: si===0 ? clashAgencies : [],
-              accentColor:accent,
-              isPartnerView:!!isPartnerView,
-              theme,
-              onOpen:()=>{ setPanelSlotKey(slotKey); setPanelDate(date); },
-              onClear:()=>{ setShifts(p=>{const n={...p};delete n[slotKey];return n;}); triggerAutoSync(); },
-              onCopyLast: si===0&&lastWeekShift?.working ? ()=>{
-                const nk = nextSlotKey(shifts,date,agency.id);
-                setShift(date,agency.id,{...lastWeekShift,id:uuid(),agencyId:agency.id,_manual:true});
-              } : null
-            })
-          ),
-          null
+          agRows.map(({ag, slotKey, slotShift, si, totalSlots}, ri)=>{
+            const lastWeekSlots = getSlots(shifts,addDays(date,-7),ag.id);
+            const lastWeekShift = lastWeekSlots.length>0 ? lastWeekSlots[0].shift : null;
+            const clashAgencies = si===0 ? otherAgencyClashOn(date, ag.id) : [];
+            // Agency initial badge (circled letter on right)
+            const agBadge = visibleAgencies.length>1 ? React.createElement("div",{
+              style:{
+                position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",
+                width:22,height:22,borderRadius:"50%",
+                background:(ag.color||accent)+"33",
+                border:`1.5px solid ${ag.color||accent}88`,
+                display:"flex",alignItems:"center",justifyContent:"center",
+                fontSize:11,fontWeight:800,color:ag.color||accent,
+                fontFamily:"'DM Sans',sans-serif",zIndex:2,pointerEvents:"none",flexShrink:0
+              }
+            },(ag.name||"?")[0].toUpperCase()) : null;
+            return React.createElement("div",{key:slotKey,style:{position:"relative"}},
+              React.createElement(ShiftRow,{
+                key:slotKey,
+                date, shift:slotShift||blankShift(ag.id),
+                slotIndex:si, totalSlots,
+                partnerWorking: ri===0 ? partnerWorking : false,
+                clashAgencies,
+                accentColor:ag.color||accent,
+                isPartnerView:!!isPartnerView,
+                theme,
+                onOpen:()=>{
+                  if (!slotShift && activeAg==="all" && agencies.length>1) {
+                    // Empty row in all-agencies mode — open agency picker
+                    setAgencyPickerDate(date);
+                  } else {
+                    setPanelSlotKey(slotKey);
+                    setPanelDate(date);
+                    setPanelAgId(ag.id);
+                  }
+                },
+                onClear:()=>{ setShifts(p=>{const n={...p};delete n[slotKey];return n;}); triggerAutoSync(); },
+                onCopyLast: si===0&&lastWeekShift?.working ? ()=>{
+                  const nk = nextSlotKey(shifts,date,ag.id);
+                  setShift(date,ag.id,{...lastWeekShift,id:uuid(),agencyId:ag.id,_manual:true});
+                } : null
+              }),
+              agBadge
+            );
+          })
         );
       })
     ),
@@ -1625,26 +1670,62 @@ const WeeklyView = ({agencies,shifts,setShifts,weekStartDay,accentColor,presets,
     React.createElement("div",{style:{flexShrink:0}},
       React.createElement(SummaryTile,{weekStats,totalHours,totalPay,monthPay:monthStats.pay,monthHours:monthStats.hours,weekKey,targetHours:targetHours||0,accentColor:accent,theme,payDetails,agencies,isCurrentWeek,activeAgId:activeAg,agencyMonthStats,summaryPeriod,footerExpanded,setFooterExpanded,prefs,setPrefs,isPartnerView:!!isPartnerView})
     ),
+    // Agency picker bottom-sheet
+    agencyPickerDate&&React.createElement("div",{
+      style:{position:"absolute",inset:0,zIndex:200,display:"flex",flexDirection:"column",justifyContent:"flex-end",background:"rgba(0,0,0,0.45)"},
+      onClick:()=>setAgencyPickerDate(null)
+    },
+      React.createElement("div",{
+        style:{background:isWDark?BG2:"#ffffff",borderRadius:"18px 18px 0 0",padding:"20px 16px 32px",display:"flex",flexDirection:"column",gap:10},
+        onClick:e=>e.stopPropagation()
+      },
+        React.createElement("div",{style:{fontSize:13,fontWeight:700,color:WTXT3,fontFamily:"'DM Sans',sans-serif",marginBottom:4,textAlign:"center"}},"Add shift for…"),
+        agencies.map(ag=>React.createElement("button",{
+          key:ag.id,
+          onClick:()=>{
+            const slotKey=`${agencyPickerDate}_${ag.id}`;
+            setPanelSlotKey(slotKey);
+            setPanelDate(agencyPickerDate);
+            setPanelAgId(ag.id);
+            setAgencyPickerDate(null);
+          },
+          style:{
+            width:"100%",padding:"13px 16px",borderRadius:12,cursor:"pointer",
+            background:isWDark?`${ag.color}18`:"#f8f6f1",
+            border:`1.5px solid ${ag.color||accent}66`,
+            color:ag.color||accent,fontFamily:"'DM Sans',sans-serif",fontWeight:800,fontSize:15,
+            display:"flex",alignItems:"center",gap:10
+          }
+        },
+          React.createElement("div",{style:{
+            width:26,height:26,borderRadius:"50%",background:(ag.color||accent)+"33",
+            border:`2px solid ${ag.color||accent}`,
+            display:"flex",alignItems:"center",justifyContent:"center",
+            fontSize:12,fontWeight:900,color:ag.color||accent
+          }},(ag.name||"?")[0].toUpperCase()),
+          ag.name
+        ))
+      )
+    ),
     // Panel
-    panelDate&&agency&&(()=>{
-      const slotKey = panelSlotKey || `${panelDate}_${agency.id}`;
-      const slotShift = shifts[slotKey] || blankShift(agency.id);
+    panelDate&&panelAgency&&(()=>{
+      const slotKey = panelSlotKey || `${panelDate}_${panelAgency.id}`;
+      const slotShift = shifts[slotKey] || blankShift(panelAgency.id);
       return React.createElement(ShiftPanel,{
         date:panelDate,
         shift:slotShift,
-        color:agency.color||accent,
+        color:panelAgency.color||accent,
         presets,
         allShifts:shifts,
-        agencyId:agency.id,
+        agencyId:panelAgency.id,
         onSave:s=>{ setShifts(p=>({...p,[slotKey]:s})); triggerAutoSync(); },
-        onClose:()=>{ setPanelDate(null); setPanelSlotKey(null); },
+        onClose:()=>{ setPanelDate(null); setPanelSlotKey(null); setPanelAgId(null); },
         theme,
         onAddAnother:()=>{
-          const nk = nextSlotKey(shifts,panelDate,agency.id);
-          setShifts(p=>({...p,[nk]:blankShift(agency.id)}));
+          const nk = nextSlotKey(shifts,panelDate,panelAgency.id);
+          setShifts(p=>({...p,[nk]:blankShift(panelAgency.id)}));
           triggerAutoSync();
           setPanelSlotKey(nk);
-          // panelDate stays the same, panel re-opens with blank shift
         }
       });
     })()

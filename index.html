@@ -1475,6 +1475,7 @@ const WeeklyView = ({agencies,shifts,setShifts,weekStartDay,accentColor,presets,
   const [calOpen,setCalOpen] = useState(false);
   const [calYear,setCalYear] = useState(()=>new Date().getFullYear());
   const [calMonth,setCalMonth] = useState(()=>new Date().getMonth());
+  const [calPickingYear,setCalPickingYear] = useState(false);
   const baseKey = getWeekKey(today,weekStartDay);
   const weekKey = (()=>{
     const d=new Date(baseKey+"T00:00:00"); d.setDate(d.getDate()+offset*7);
@@ -1772,12 +1773,12 @@ const WeeklyView = ({agencies,shifts,setShifts,weekStartDay,accentColor,presets,
       const viewedWeek = weekKey;
       // Today's date string
       const todayStr = today;
-      // Year picker state — inline
-      const [pickingYear, setPickingYear] = React.useState(false);
+      const pickingYear = calPickingYear;
+      const setPickingYear = setCalPickingYear;
       const yearRange = Array.from({length:10},(_,i)=>calYear-4+i);
       return React.createElement("div",{
         style:{position:"absolute",inset:0,zIndex:300,display:"flex",flexDirection:"column",justifyContent:"flex-start",alignItems:"center",background:"rgba(0,0,0,0.5)",paddingTop:60},
-        onClick:()=>setCalOpen(false)
+        onClick:()=>{ setCalOpen(false); setCalPickingYear(false); }
       },
         React.createElement("div",{
           style:{background:isWDark?"#1e2d58":"#ffffff",borderRadius:20,padding:"16px 14px 20px",width:"calc(100% - 28px)",maxWidth:360,boxShadow:"0 8px 40px rgba(0,0,0,0.4)"},
@@ -1854,7 +1855,7 @@ const WeeklyView = ({agencies,shifts,setShifts,weekStartDay,accentColor,presets,
           ),
           // Jump to today button
           React.createElement("button",{
-            onClick:()=>{ setOffset(0); setCalOpen(false); },
+            onClick:()=>{ setOffset(0); setCalOpen(false); setCalPickingYear(false); },
             style:{
               width:"100%",marginTop:14,padding:"9px 0",borderRadius:10,border:"none",cursor:"pointer",
               background:accent+"22",color:accent,fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:13

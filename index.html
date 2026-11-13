@@ -1472,6 +1472,9 @@ const WeeklyView = ({agencies,shifts,setShifts,weekStartDay,accentColor,presets,
   const [panelAgId,setPanelAgId] = useState(null);
   const [agencyPickerDate,setAgencyPickerDate] = useState(null);
   const [footerExpanded,setFooterExpanded] = useState(false);
+  const [calOpen,setCalOpen] = useState(false);
+  const [calYear,setCalYear] = useState(()=>new Date().getFullYear());
+  const [calMonth,setCalMonth] = useState(()=>new Date().getMonth());
   const baseKey = getWeekKey(today,weekStartDay);
   const weekKey = (()=>{
     const d=new Date(baseKey+"T00:00:00"); d.setDate(d.getDate()+offset*7);
@@ -1591,8 +1594,18 @@ const WeeklyView = ({agencies,shifts,setShifts,weekStartDay,accentColor,presets,
     React.createElement("div",{style:{flexShrink:0,padding:"10px 14px 10px",background:WBG,boxShadow:isWDark?"none":"0 1px 0 rgba(26,39,68,0.08)"}},
       React.createElement("div",{style:{display:"flex",alignItems:"center",gap:8,marginBottom:10}},
         React.createElement("button",{onClick:()=>setOffset(o=>o-1),style:{background:WBG2,border:`1px solid ${isWDark?WBDR:"rgba(26,39,68,0.12)"}`,borderRadius:10,color:WTXT3,padding:"5px 13px",cursor:"pointer",fontSize:17}},"‹"),
-        React.createElement("div",{style:{flex:1,textAlign:"center"}},
-          React.createElement("div",{style:{fontSize:13,fontWeight:700,color:WTXT2,fontFamily:"'DM Sans',sans-serif"}},weekLabel(weekKey)),
+        React.createElement("div",{
+          onClick:()=>{
+            const d=new Date(weekKey+"T00:00:00");
+            setCalYear(d.getFullYear()); setCalMonth(d.getMonth());
+            setCalOpen(true);
+          },
+          style:{flex:1,textAlign:"center",cursor:"pointer",userSelect:"none",WebkitUserSelect:"none"}
+        },
+          React.createElement("div",{style:{fontSize:13,fontWeight:700,color:WTXT2,fontFamily:"'DM Sans',sans-serif"}},
+            weekLabel(weekKey),
+            React.createElement("span",{style:{fontSize:10,marginLeft:5,color:WTXT3,verticalAlign:"middle"}},"▾")
+          ),
           isCurrentWeek&&React.createElement("div",{style:{fontSize:9,color:accent,fontWeight:700,fontFamily:"'DM Sans',sans-serif",letterSpacing:"0.06em"}},"CURRENT WEEK")
         ),
         React.createElement("button",{onClick:()=>setOffset(o=>o+1),style:{background:WBG2,border:`1px solid ${isWDark?WBDR:"rgba(26,39,68,0.12)"}`,borderRadius:10,color:WTXT3,padding:"5px 13px",cursor:"pointer",fontSize:17}},"›"),
@@ -1737,6 +1750,119 @@ const WeeklyView = ({agencies,shifts,setShifts,weekStartDay,accentColor,presets,
         ))
       )
     ),
+    // Calendar date-picker popup
+    calOpen&&(()=>{
+      const MONTHS=["January","February","March","April","May","June","July","August","September","October","November","December"];
+      const daysInMo = new Date(calYear,calMonth+1,0).getDate();
+      const firstDow = new Date(calYear,calMonth,1).getDay();
+      const startPad = (firstDow - weekStartDay + 7) % 7;
+      const cells = [];
+      for(let i=0;i<startPad;i++) cells.push(null);
+      for(let d=1;d<=daysInMo;d++) cells.push(d);
+      while(cells.length%7!==0) cells.push(null);
+      const rows = [];
+      for(let r=0;r<cells.length/7;r++) rows.push(cells.slice(r*7,r*7+7));
+      const DOW_HDRS = Array.from({length:7},(_,i)=>["Su","Mo","Tu","We","Th","Fr","Sa"][(weekStartDay+i)%7]);
+      // Which week does a day belong to? Returns weekKey string
+      const weekOfDay = day => {
+        const d = new Date(calYear,calMonth,day);
+        return getWeekKey(d.toISOString().slice(0,10), weekStartDay);
+      };
+      // Currently viewed week
+      const viewedWeek = weekKey;
+      // Today's date string
+      const todayStr = today;
+      // Year picker state — inline
+      const [pickingYear, setPickingYear] = React.useState(false);
+      const yearRange = Array.from({length:10},(_,i)=>calYear-4+i);
+      return React.createElement("div",{
+        style:{position:"absolute",inset:0,zIndex:300,display:"flex",flexDirection:"column",justifyContent:"flex-start",alignItems:"center",background:"rgba(0,0,0,0.5)",paddingTop:60},
+        onClick:()=>setCalOpen(false)
+      },
+        React.createElement("div",{
+          style:{background:isWDark?"#1e2d58":"#ffffff",borderRadius:20,padding:"16px 14px 20px",width:"calc(100% - 28px)",maxWidth:360,boxShadow:"0 8px 40px rgba(0,0,0,0.4)"},
+          onClick:e=>e.stopPropagation()
+        },
+          // Header: prev/next month + month+year label (tappable for year)
+          React.createElement("div",{style:{display:"flex",alignItems:"center",marginBottom:12,gap:4}},
+            React.createElement("button",{
+              onClick:()=>{ let m=calMonth-1,y=calYear; if(m<0){m=11;y--;} setCalMonth(m);setCalYear(y);setPickingYear(false); },
+              style:{background:"transparent",border:"none",color:WTXT3,fontSize:20,cursor:"pointer",padding:"2px 6px",borderRadius:8}
+            },"‹"),
+            React.createElement("div",{style:{flex:1,textAlign:"center"}},
+              React.createElement("button",{
+                onClick:()=>setPickingYear(p=>!p),
+                style:{background:"transparent",border:"none",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:800,fontSize:15,color:WTXT2}
+              }, MONTHS[calMonth]+" "+calYear+" ▾")
+            ),
+            React.createElement("button",{
+              onClick:()=>{ let m=calMonth+1,y=calYear; if(m>11){m=0;y++;} setCalMonth(m);setCalYear(y);setPickingYear(false); },
+              style:{background:"transparent",border:"none",color:WTXT3,fontSize:20,cursor:"pointer",padding:"2px 6px",borderRadius:8}
+            },"›")
+          ),
+          // Year picker grid
+          pickingYear&&React.createElement("div",{style:{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:4,marginBottom:12}},
+            yearRange.map(y=>React.createElement("button",{
+              key:y,
+              onClick:()=>{ setCalYear(y); setPickingYear(false); },
+              style:{
+                padding:"6px 0",borderRadius:8,border:"none",cursor:"pointer",
+                fontFamily:"'DM Sans',sans-serif",fontWeight:y===calYear?800:500,fontSize:12,
+                background:y===calYear?accent+"33":"transparent",
+                color:y===calYear?accent:WTXT2
+              }
+            },y))
+          ),
+          // Day-of-week headers
+          React.createElement("div",{style:{display:"grid",gridTemplateColumns:"repeat(7,1fr)",marginBottom:4}},
+            DOW_HDRS.map(h=>React.createElement("div",{key:h,style:{textAlign:"center",fontSize:10,fontWeight:700,color:WTXT3,fontFamily:"'DM Sans',sans-serif",padding:"2px 0"}},h))
+          ),
+          // Day cells
+          React.createElement("div",{style:{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2}},
+            rows.flatMap((row,ri)=>row.map((day,ci)=>{
+              if(!day) return React.createElement("div",{key:`e${ri}-${ci}`});
+              const dateStr=`${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+              const isToday = dateStr===todayStr;
+              const inViewedWeek = weekOfDay(day)===viewedWeek;
+              const hasAnyShift = agencies.some(ag=>dayWorking(shifts,dateStr,ag.id));
+              return React.createElement("button",{
+                key:day,
+                onClick:()=>{
+                  // Compute offset from today's base week to this date's week
+                  const tgtWeek = weekOfDay(day);
+                  const baseD = new Date(baseKey+"T00:00:00");
+                  const tgtD  = new Date(tgtWeek+"T00:00:00");
+                  const diff  = Math.round((tgtD-baseD)/(7*86400000));
+                  setOffset(diff);
+                  setCalOpen(false);
+                },
+                style:{
+                  padding:"5px 0",borderRadius:8,border:isToday?`1.5px solid ${accent}`:"1px solid transparent",cursor:"pointer",
+                  background:inViewedWeek?(isWDark?accent+"22":accent+"18"):"transparent",
+                  color:isToday?accent:WTXT2,
+                  fontFamily:"'DM Mono',monospace",fontWeight:isToday?800:500,fontSize:13,
+                  position:"relative"
+                }
+              },
+                day,
+                hasAnyShift&&React.createElement("span",{style:{
+                  position:"absolute",bottom:2,left:"50%",transform:"translateX(-50%)",
+                  width:4,height:4,borderRadius:"50%",background:accent,display:"block"
+                }})
+              );
+            }))
+          ),
+          // Jump to today button
+          React.createElement("button",{
+            onClick:()=>{ setOffset(0); setCalOpen(false); },
+            style:{
+              width:"100%",marginTop:14,padding:"9px 0",borderRadius:10,border:"none",cursor:"pointer",
+              background:accent+"22",color:accent,fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:13
+            }
+          },"Jump to Today")
+        )
+      );
+    })(),
     // Panel
     panelDate&&panelAgency&&(()=>{
       const slotKey = panelSlotKey || `${panelDate}_${panelAgency.id}`;
